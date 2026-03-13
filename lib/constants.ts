@@ -31,7 +31,7 @@ export const NAVIGATION: NavSection[] = [
   {
     id: 'preparations',
     label: 'Préparations',
-    emoji: '👨‍🍳',
+    emoji: '🔪',
     type: 'preparation',
     categories: [
       { slug: 'pates', label: 'Pâtes' },
@@ -43,7 +43,7 @@ export const NAVIGATION: NavSection[] = [
   {
     id: 'produits',
     label: 'Fiches produit',
-    emoji: '📦',
+    emoji: '📋',
     type: 'produit',
     categories: [],
   },
