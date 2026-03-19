@@ -30,12 +30,18 @@ export default async function FicheDetailPage({ params }: { params: { id: string
 
   // Fetch linked preparations for plat type
   let linkedPreparations: { id: string; nom: string; categorie: string }[] = []
-  if (data.type === 'plat' && Array.isArray(data.preparation_ids) && data.preparation_ids.length > 0) {
-    const { data: preps } = await supabase
-      .from('fiches')
-      .select('id, nom, categorie')
-      .in('id', data.preparation_ids)
-    linkedPreparations = preps || []
+  try {
+    const prepIds = data.preparation_ids
+    const ids = Array.isArray(prepIds) ? prepIds : (typeof prepIds === 'string' ? JSON.parse(prepIds) : [])
+    if (data.type === 'plat' && ids.length > 0) {
+      const { data: preps } = await supabase
+        .from('fiches')
+        .select('id, nom, categorie')
+        .in('id', ids)
+      linkedPreparations = preps || []
+    }
+  } catch {
+    linkedPreparations = []
   }
 
   const fiche = data as Fiche
