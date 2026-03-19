@@ -54,22 +54,22 @@ export default function PlatForm({ categorie, defaultValues }: {
       </div>
 
       <div className="form-section">
+        <h2 className="form-section-title">Éléments du plat</h2>
+        <textarea
+          name="preparations_libres"
+          className="field-textarea"
+          placeholder="Ex. Pickles maison, huile de truffe, fleur de sel…"
+          rows={3}
+          defaultValue={defaultValues?.preparations_libres}
+        />
+      </div>
+
+      <div className="form-section">
         <h2 className="form-section-title">Préparations associées</h2>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
           Sélectionnez les préparations déjà enregistrées qui composent ce plat.
         </p>
         <PreparationSelector selected={preparationIds} onChange={setPreparationIds} />
-        <div style={{ marginTop: 16 }}>
-          <label className="field-label">Éléments du plat</label>
-          <textarea
-            name="preparations_libres"
-            className="field-textarea"
-            placeholder="Ex. Pickles maison, huile de truffe, fleur de sel…"
-            rows={3}
-            defaultValue={defaultValues?.preparations_libres}
-            style={{ marginTop: 6 }}
-          />
-        </div>
       </div>
 
       <div className="form-section">
