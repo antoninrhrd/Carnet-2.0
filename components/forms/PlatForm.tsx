@@ -60,7 +60,7 @@ export default function PlatForm({ categorie, defaultValues }: {
         </p>
         <PreparationSelector selected={preparationIds} onChange={setPreparationIds} />
         <div style={{ marginTop: 16 }}>
-          <label className="field-label">Autres préparations / ingrédients non enregistrés</label>
+          <label className="field-label">Éléments du plat</label>
           <textarea
             name="preparations_libres"
             className="field-textarea"
