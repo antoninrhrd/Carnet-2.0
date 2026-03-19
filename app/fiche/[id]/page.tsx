@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase'
 import { NAVIGATION, SAISON_STYLE } from '@/lib/constants'
 import DeleteButton from './DeleteButton'
+import IngredientScaler from '@/components/IngredientScaler'
 import type { Fiche, Ingredient } from '@/lib/types'
 
 function backHref(fiche: Fiche) {
@@ -169,14 +170,7 @@ export default async function FicheDetailPage({ params }: { params: { id: string
           {fiche.ingredients && fiche.ingredients.length > 0 && (
             <div className="detail-section">
               <h2 className="detail-section-title">Ingrédients</h2>
-              <ul className="ingredient-list">
-                {(fiche.ingredients as Ingredient[]).map((ing, i) => (
-                  <li key={ing.id || i} className="ingredient-item">
-                    <span className="ingredient-qty">{ing.quantite} {ing.unite}</span>
-                    <span>{ing.nom}</span>
-                  </li>
-                ))}
-              </ul>
+              <IngredientScaler ingredients={fiche.ingredients as Ingredient[]} />
             </div>
           )}
           {fiche.etapes && fiche.etapes.length > 0 && (
