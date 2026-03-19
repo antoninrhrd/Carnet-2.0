@@ -171,6 +171,17 @@ export default function PreparationForm({ categorie, defaultValues }: Props) {
         />
       </div>
 
+      {/* Source */}
+      <div className="form-section">
+        <h2 className="form-section-title">Source / Inspiration</h2>
+        <input
+          name="source_preparation"
+          className="field-input"
+          placeholder="Ex. Chef Troisgros, livre Escoffier…"
+          defaultValue={defaultValues?.source_preparation}
+        />
+      </div>
+
       <div className="form-actions">
         <button type="submit" className="btn-primary" disabled={isPending}>
           {isPending ? 'Enregistrement…' : '✓ Enregistrer la fiche'}
