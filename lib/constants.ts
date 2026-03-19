@@ -38,6 +38,7 @@ export const NAVIGATION: NavSection[] = [
       { slug: 'pasta', label: 'Pasta' },
       { slug: 'sauces', label: 'Sauces' },
       { slug: 'condiments', label: 'Condiments' },
+      { slug: 'autre', label: 'Autre' },
     ],
   },
   {
