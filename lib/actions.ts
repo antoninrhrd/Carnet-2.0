@@ -47,6 +47,7 @@ export async function createFiche(formData: FormData) {
       etapes: JSON.parse((formData.get('etapes') as string) || '[]'),
       saison: formData.get('saison') || null,
       note_perso: formData.get('note_perso') || null,
+      source_preparation: formData.get('source_preparation') || null,
     }
   } else if (type === 'produit') {
     const pMin = formData.get('prix_min')
@@ -103,6 +104,7 @@ export async function updateFiche(id: string, formData: FormData) {
       etapes: JSON.parse((formData.get('etapes') as string) || '[]'),
       saison: formData.get('saison') || null,
       note_perso: formData.get('note_perso') || null,
+      source_preparation: formData.get('source_preparation') || null,
     }
   } else if (type === 'produit') {
     const pMin = formData.get('prix_min')
