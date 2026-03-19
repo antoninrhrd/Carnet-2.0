@@ -54,6 +54,7 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const fd = new FormData(formRef.current!)
+    fd.set('categorie', categorie) // Force la nouvelle catégorie depuis le state
     if (fiche.type === 'preparation') {
       fd.set('ingredients', JSON.stringify(ingredients.filter(i => i.nom.trim())))
       fd.set('etapes', JSON.stringify(etapes.filter(s => s.trim())))
