@@ -121,10 +121,7 @@ export default async function FicheDetailPage({ params }: { params: { id: string
                       background: 'var(--accent-light)',
                       border: '1px solid rgba(196,98,45,0.2)',
                       textDecoration: 'none',
-                      transition: 'all 0.15s',
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(196,98,45,0.15)' }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-light)' }}
                   >
                     <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 17, fontWeight: 500, color: 'var(--text-primary)' }}>
                       {prep.nom}
