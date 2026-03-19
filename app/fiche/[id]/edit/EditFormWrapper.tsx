@@ -68,7 +68,6 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   return (
     <form ref={formRef} onSubmit={handleSubmit}>
       <input type="hidden" name="type" value={fiche.type} />
-      <input type="hidden" name="categorie" value={categorie} />
       <input type="hidden" name="existing_image_url" value={fiche.image_url || ''} />
 
       {/* Catégorie — always shown if there are subcategories */}
