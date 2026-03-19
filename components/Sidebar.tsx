@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { NAVIGATION } from '@/lib/constants'
@@ -8,9 +8,10 @@ import { NAVIGATION } from '@/lib/constants'
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
+  counts: Record<string, number>
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, counts }: SidebarProps) {
   const pathname = usePathname()
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     plats: true,
@@ -25,19 +26,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <aside className={`sidebar${isOpen ? ' open' : ''}`}>
-      {/* Header */}
       <div className="sidebar-header">
-        <span className="sidebar-title">Mes Fiches</span>
+        <Link href="/" style={{ textDecoration: 'none' }} onClick={onClose}>
+          <span className="sidebar-title">Mes Fiches</span>
+        </Link>
       </div>
 
-      {/* Nav */}
       <nav className="sidebar-nav">
         {NAVIGATION.map(section => {
           const hasCats = section.categories.length > 0
+          const sectionCount = hasCats
+            ? section.categories.reduce((sum, cat) => sum + (counts[`${section.type}_${cat.slug}`] || 0), 0)
+            : (counts[`produit_produits`] || 0)
 
           return (
             <div key={section.id} className="sidebar-section">
-              {/* Section button */}
               <button
                 className="sidebar-section-btn"
                 onClick={() => hasCats && toggle(section.id)}
@@ -45,6 +48,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <span className="sidebar-section-left">
                   <span className="sidebar-section-emoji">{section.emoji}</span>
                   <span>{section.label}</span>
+                  {sectionCount > 0 && (
+                    <span className="sidebar-count-badge">{sectionCount}</span>
+                  )}
                 </span>
                 {hasCats && (
                   <span className={`sidebar-chevron${expanded[section.id] ? ' open' : ''}`}>
@@ -53,7 +59,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 )}
               </button>
 
-              {/* Produits — no subcats */}
               {!hasCats && (
                 <div className="sidebar-categories">
                   <div className={`sidebar-item${isActive('/produits') ? ' active' : ''}`}>
@@ -71,11 +76,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
               )}
 
-              {/* Subcategories */}
               {hasCats && expanded[section.id] && (
                 <div className="sidebar-categories">
                   {section.categories.map(cat => {
                     const href = `/${section.id}/${cat.slug}`
+                    const count = counts[`${section.type}_${cat.slug}`] || 0
                     return (
                       <div
                         key={cat.slug}
@@ -84,6 +89,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <Link href={href} className="sidebar-item-link" onClick={onClose}>
                           {cat.label}
                         </Link>
+                        {count > 0 && (
+                          <span className="sidebar-count">{count}</span>
+                        )}
                         <Link
                           href={`/nouvelle-fiche?type=${section.type}&categorie=${cat.slug}&section=${section.id}`}
                           className="sidebar-add"
