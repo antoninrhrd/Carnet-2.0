@@ -19,6 +19,7 @@ export interface Fiche {
   // Preparation fields
   ingredients?: Ingredient[]
   etapes?: string[]
+  source_preparation?: string
   // Shared
   saison?: SaisonType
   note_perso?: string
@@ -39,3 +40,4 @@ export interface PreparationSummary {
   nom: string
   categorie: string
 }
+
