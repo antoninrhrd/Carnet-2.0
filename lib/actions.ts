@@ -38,6 +38,7 @@ export async function createFiche(formData: FormData) {
       saison: formData.get('saison') || null,
       note_perso: formData.get('note_perso') || null,
       preparation_ids: prepIds ? JSON.parse(prepIds as string) : [],
+      preparations_libres: formData.get('preparations_libres') || null,
     }
   } else if (type === 'preparation') {
     ficheData = {
@@ -93,6 +94,7 @@ export async function updateFiche(id: string, formData: FormData) {
       saison: formData.get('saison') || null,
       note_perso: formData.get('note_perso') || null,
       preparation_ids: prepIds ? JSON.parse(prepIds as string) : [],
+      preparations_libres: formData.get('preparations_libres') || null,
     }
   } else if (type === 'preparation') {
     ficheData = {
