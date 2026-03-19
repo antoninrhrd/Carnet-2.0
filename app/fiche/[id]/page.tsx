@@ -137,6 +137,14 @@ export default async function FicheDetailPage({ params }: { params: { id: string
             </div>
           )}
 
+          {/* Préparations libres */}
+          {fiche.preparations_libres && (
+            <div className="detail-section">
+              <h2 className="detail-section-title">Autres préparations / ingrédients</h2>
+              <div className="detail-field-value" style={{ whiteSpace: 'pre-wrap' }}>{fiche.preparations_libres}</div>
+            </div>
+          )}
+
           {fiche.dressage && (
             <div className="detail-section">
               <h2 className="detail-section-title">Dressage</h2>
