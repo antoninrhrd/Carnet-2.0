@@ -38,6 +38,7 @@ export const NAVIGATION: NavSection[] = [
       { slug: 'pasta', label: 'Pasta' },
       { slug: 'sauces', label: 'Sauces' },
       { slug: 'condiments', label: 'Condiments' },
+      { slug: 'sucre', label: 'Sucré' },
       { slug: 'autre', label: 'Autre' },
     ],
   },
@@ -71,3 +72,4 @@ export function getCategoryLabel(sectionId: string, slug: string): string {
   const cat = section?.categories.find(c => c.slug === slug)
   return cat?.label || slug
 }
+
