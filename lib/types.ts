@@ -29,6 +29,7 @@ export interface Fiche {
   prix_max?: number
   // Plat → lien vers préparations
   preparation_ids?: string[]
+  preparations_libres?: string
   created_at: string
   updated_at: string
 }
