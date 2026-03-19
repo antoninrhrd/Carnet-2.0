@@ -766,6 +766,8 @@ h1, h2, h3, h4, .font-display {
   font-weight: 500;
   margin-bottom: 14px;
   color: #8C7B6B;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .detail-field {
