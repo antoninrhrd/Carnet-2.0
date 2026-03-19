@@ -157,6 +157,15 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
             ))}
             <button type="button" className="btn-add-row" onClick={addEtape}>+ Ajouter une étape</button>
           </div>
+          <div className="form-section">
+            <h2 className="form-section-title">Source / Inspiration</h2>
+            <input
+              name="source_preparation"
+              className="field-input"
+              placeholder="Ex. Chef Troisgros, livre Escoffier…"
+              defaultValue={fiche.source_preparation || ''}
+            />
+          </div>
         </>
       )}
 
@@ -225,3 +234,4 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
     </form>
   )
 }
+
