@@ -90,6 +90,17 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
               Sélectionnez les préparations qui composent ce plat.
             </p>
             <PreparationSelector selected={preparationIds} onChange={setPreparationIds} />
+            <div style={{ marginTop: 16 }}>
+              <label className="field-label">Autres préparations / ingrédients non enregistrés</label>
+              <textarea
+                name="preparations_libres"
+                className="field-textarea"
+                placeholder="Ex. Pickles maison, huile de truffe, fleur de sel…"
+                rows={3}
+                defaultValue={fiche.preparations_libres || ''}
+                style={{ marginTop: 6 }}
+              />
+            </div>
           </div>
           <div className="form-section">
             <h2 className="form-section-title">Dressage &amp; présentation</h2>
