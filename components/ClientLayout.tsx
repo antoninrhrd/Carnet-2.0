@@ -3,20 +3,23 @@
 import { useState } from 'react'
 import Sidebar from './Sidebar'
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
+interface Props {
+  children: React.ReactNode
+  counts: Record<string, number>
+}
+
+export default function ClientLayout({ children, counts }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="app-layout">
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
       )}
 
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} counts={counts} />
 
       <div className="main-content">
-        {/* Mobile top bar */}
         <div className="mobile-top">
           <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Menu">
             ☰
