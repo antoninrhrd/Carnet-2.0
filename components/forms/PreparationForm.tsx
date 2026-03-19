@@ -15,6 +15,7 @@ interface Props {
     image_url?: string
     ingredients?: Ingredient[]
     etapes?: string[]
+    source_preparation?: string
   }
 }
 
