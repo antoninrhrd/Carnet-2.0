@@ -765,7 +765,7 @@ h1, h2, h3, h4, .font-display {
   font-size: 19px;
   font-weight: 500;
   margin-bottom: 14px;
-  color: var(--text-primary);
+  color: #8C7B6B;
 }
 
 .detail-field {
@@ -779,14 +779,14 @@ h1, h2, h3, h4, .font-display {
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #8C7B6B;
   margin-bottom: 4px;
 }
 
 .detail-field-value {
-  font-size: 14.5px;
+  font-size: 15px;
   color: var(--text-primary);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .ingredient-list {
