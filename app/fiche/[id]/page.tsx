@@ -103,6 +103,14 @@ export default async function FicheDetailPage({ params }: { params: { id: string
             </div>
           )}
 
+          {/* Préparations libres */}
+          {fiche.preparations_libres && (
+            <div className="detail-section">
+              <h2 className="detail-section-title">Éléments du plat</h2>
+              <div className="detail-field-value" style={{ whiteSpace: 'pre-wrap' }}>{fiche.preparations_libres}</div>
+            </div>
+          )}
+
           {/* Préparations liées */}
           {linkedPreparations.length > 0 && (
             <div className="detail-section">
@@ -137,14 +145,6 @@ export default async function FicheDetailPage({ params }: { params: { id: string
                   </Link>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Préparations libres */}
-          {fiche.preparations_libres && (
-            <div className="detail-section">
-              <h2 className="detail-section-title">Éléments du plat</h2>
-              <div className="detail-field-value" style={{ whiteSpace: 'pre-wrap' }}>{fiche.preparations_libres}</div>
             </div>
           )}
 
