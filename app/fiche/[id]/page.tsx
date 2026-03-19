@@ -192,6 +192,12 @@ export default async function FicheDetailPage({ params }: { params: { id: string
               <div className="detail-field-value" style={{ whiteSpace: 'pre-wrap' }}>{fiche.note_perso}</div>
             </div>
           )}
+          {fiche.source_preparation && (
+            <div className="detail-section">
+              <h2 className="detail-section-title">Source / Inspiration</h2>
+              <div className="detail-field-value">{fiche.source_preparation}</div>
+            </div>
+          )}
         </>
       )}
 
