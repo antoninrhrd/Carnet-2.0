@@ -27,7 +27,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <aside className={`sidebar${isOpen ? ' open' : ''}`}>
       {/* Header */}
       <div className="sidebar-header">
-        <span className="sidebar-logo">🍴</span>
         <span className="sidebar-title">Mes Fiches</span>
       </div>
 
