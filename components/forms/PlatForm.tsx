@@ -59,6 +59,17 @@ export default function PlatForm({ categorie, defaultValues }: {
           Sélectionnez les préparations déjà enregistrées qui composent ce plat.
         </p>
         <PreparationSelector selected={preparationIds} onChange={setPreparationIds} />
+        <div style={{ marginTop: 16 }}>
+          <label className="field-label">Autres préparations / ingrédients non enregistrés</label>
+          <textarea
+            name="preparations_libres"
+            className="field-textarea"
+            placeholder="Ex. Pickles maison, huile de truffe, fleur de sel…"
+            rows={3}
+            defaultValue={defaultValues?.preparations_libres}
+            style={{ marginTop: 6 }}
+          />
+        </div>
       </div>
 
       <div className="form-section">
