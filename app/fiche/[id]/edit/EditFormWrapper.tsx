@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { updateFiche } from '@/lib/actions'
-import { SAISONS, UNITE_OPTIONS } from '@/lib/constants'
+import { SAISONS, UNITE_OPTIONS, NAVIGATION } from '@/lib/constants'
 import type { Fiche, Ingredient } from '@/lib/types'
 import PreparationSelector from '@/components/forms/PreparationSelector'
 
@@ -11,9 +11,16 @@ function newIngredient(): Ingredient {
   return { id: Math.random().toString(36).slice(2), quantite: '', unite: '', nom: '' }
 }
 
+// Get categories for a given type
+function getCategoriesForType(type: string) {
+  const section = NAVIGATION.find(s => s.type === type)
+  return section?.categories || []
+}
+
 export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   const [preview, setPreview] = useState<string | null>(fiche.image_url || null)
   const [isPending, startTransition] = useTransition()
+  const [categorie, setCategorie] = useState(fiche.categorie)
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     fiche.ingredients?.length ? fiche.ingredients : [newIngredient()]
   )
@@ -24,6 +31,8 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
     Array.isArray(fiche.preparation_ids) ? fiche.preparation_ids : []
   )
   const formRef = useRef<HTMLFormElement>(null)
+
+  const categories = getCategoriesForType(fiche.type)
 
   function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -58,8 +67,24 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   return (
     <form ref={formRef} onSubmit={handleSubmit}>
       <input type="hidden" name="type" value={fiche.type} />
-      <input type="hidden" name="categorie" value={fiche.categorie} />
+      <input type="hidden" name="categorie" value={categorie} />
       <input type="hidden" name="existing_image_url" value={fiche.image_url || ''} />
+
+      {/* Catégorie — always shown if there are subcategories */}
+      {categories.length > 0 && (
+        <div className="form-section">
+          <h2 className="form-section-title">Catégorie</h2>
+          <select
+            className="field-select"
+            value={categorie}
+            onChange={e => setCategorie(e.target.value)}
+          >
+            {categories.map(c => (
+              <option key={c.slug} value={c.slug}>{c.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* ── PLAT ── */}
       {fiche.type === 'plat' && (
@@ -234,4 +259,3 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
     </form>
   )
 }
-
