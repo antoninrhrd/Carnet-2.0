@@ -37,7 +37,7 @@ export default async function HomePage({
             {searchParams.saison ? ` · ${searchParams.saison}` : ''}
           </p>
         </div>
-        <Link href="/nouvelle-fiche?type=plat&categorie=entrees&section=plats" className="btn-primary">
+        <Link href="/nouvelle-fiche/choisir" className="btn-primary">
           + Nouvelle fiche
         </Link>
       </div>
@@ -60,3 +60,4 @@ export default async function HomePage({
     </>
   )
 }
+
