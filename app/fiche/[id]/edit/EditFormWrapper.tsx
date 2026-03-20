@@ -221,26 +221,22 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
             <h2 className="form-section-title">Note libre</h2>
             <textarea name="note_libre" className="field-textarea" rows={6} defaultValue={fiche.note_libre || ''} />
           </div>
-        </>
-      )}
-
-      {/* Image (plat + préparation) */}
-      {fiche.type !== 'produit' && (
-        <div className="form-section">
-          <h2 className="form-section-title">Photo</h2>
-          <div className="image-upload-zone">
-            <input type="file" name="image" accept="image/*" onChange={handleImage} />
-            {preview ? (
-              <Image src={preview} alt="Aperçu" width={600} height={220} className="image-preview" style={{ objectFit: 'cover' }} />
-            ) : (
-              <>
-                <div className="upload-icon">📷</div>
-                <p className="upload-text">Changer la photo</p>
-                <p className="upload-hint">JPG, PNG, WebP — max 5 Mo</p>
-              </>
-            )}
+          <div className="form-section">
+            <h2 className="form-section-title">Photo</h2>
+            <div className="image-upload-zone">
+              <input type="file" name="image" accept="image/*" onChange={handleImage} />
+              {preview ? (
+                <Image src={preview} alt="Aperçu" width={600} height={220} className="image-preview" style={{ objectFit: 'cover' }} />
+              ) : (
+                <>
+                  <div className="upload-icon">📷</div>
+                  <p className="upload-text">Changer la photo</p>
+                  <p className="upload-hint">JPG, PNG, WebP — max 5 Mo</p>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Note (plat + prépa) */}
