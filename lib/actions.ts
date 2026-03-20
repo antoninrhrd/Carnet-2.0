@@ -84,7 +84,7 @@ export async function updateFiche(id: string, formData: FormData) {
   const newImageUrl = await uploadImage(supabase, imageFile, type)
   const imageUrl = newImageUrl || existingImage
 
-  let ficheData: Record<string, unknown> = { nom, image_url: imageUrl }
+  let ficheData: Record<string, unknown> = { nom, categorie, image_url: imageUrl }
 
   if (type === 'plat') {
     const prepIds = formData.get('preparation_ids')
