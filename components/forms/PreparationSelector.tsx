@@ -20,7 +20,7 @@ export default function PreparationSelector({ selected, onChange }: Props) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/preparations')
+    fetch('/api/preparations', { cache: 'no-store' })
       .then(r => r.json())
       .then(data => { setPreparations(data); setLoading(false) })
       .catch(() => setLoading(false))
