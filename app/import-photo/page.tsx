@@ -34,7 +34,7 @@ function getCatLabel(type: string, slug: string) {
 
 export default function ImportPhotoPage() {
   const [images, setImages] = useState<{ preview: string; base64: string; mediaType: string }[]>([])
-  const [status, setStatus] = useState<'idle' | 'analyzing' | 'preview' | 'saving'>('idle')
+  const [status, setStatus] = useState<'idle' | 'analyzing' | 'preview' | 'saving' | 'done'>('idle')
   const [fiches, setFiches] = useState<FichePreview[]>([])
   const [error, setError] = useState('')
 
