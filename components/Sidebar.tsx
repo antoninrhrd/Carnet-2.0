@@ -108,6 +108,30 @@ export default function Sidebar({ isOpen, onClose, counts }: SidebarProps) {
           )
         })}
       </nav>
+
+      {/* Import photo */}
+      <div style={{ padding: '12px 12px 20px', borderTop: '1px solid var(--sidebar-border)' }}>
+        <Link
+          href="/import-photo"
+          onClick={onClose}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 10px',
+            borderRadius: 8,
+            background: 'rgba(255,255,255,0.06)',
+            textDecoration: 'none',
+            color: 'var(--sidebar-text)',
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13,
+            transition: 'background 0.15s',
+          }}
+        >
+          <span>📷</span>
+          <span>Importer depuis photo</span>
+        </Link>
+      </div>
     </aside>
   )
 }
