@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import Sidebar from './Sidebar'
 
 interface Props {
@@ -25,6 +26,9 @@ export default function ClientLayout({ children, counts }: Props) {
             ☰
           </button>
           <span className="mobile-title">Mes Fiches</span>
+          <Link href="/import-photo" style={{ color: 'white', textDecoration: 'none', fontSize: 20, marginLeft: 'auto', paddingRight: 4 }} title="Importer depuis photo">
+            📷
+          </Link>
         </div>
 
         <div className="content-inner">{children}</div>
