@@ -34,7 +34,8 @@ function getCatLabel(type: string, slug: string) {
 
 export default function ImportPhotoPage() {
   const [images, setImages] = useState<{ preview: string; base64: string; mediaType: string }[]>([])
-  const [status, setStatus] = useState<'idle' | 'analyzing' | 'preview' | 'saving' | 'done'>('idle')
+  const [status, setStatus] = useState<'idle' | 'analyzing' | 'preview'>('idle')
+  const [isSaving, setIsSaving] = useState(false)
   const [fiches, setFiches] = useState<FichePreview[]>([])
   const [error, setError] = useState('')
 
@@ -94,11 +95,11 @@ export default function ImportPhotoPage() {
   }
 
   async function saveAll() {
-    setStatus('saving')
+    setIsSaving(true)
     for (let i = 0; i < fiches.length; i++) {
       if (!fiches[i].saved) await saveFiche(i)
     }
-    setStatus('preview')
+    setIsSaving(false)
   }
 
   const allSaved = fiches.length > 0 && fiches.every(f => f.saved)
@@ -168,8 +169,8 @@ export default function ImportPhotoPage() {
                 ← Recommencer
               </button>
               {!allSaved && (
-                <button className="btn-primary" onClick={saveAll} disabled={status === 'saving'}>
-                  {status === 'saving' ? 'Enregistrement…' : `✓ Tout enregistrer (${fiches.filter(f => !f.saved).length})`}
+                <button className="btn-primary" onClick={saveAll} disabled={isSaving}>
+                  {isSaving ? 'Enregistrement…' : `✓ Tout enregistrer (${fiches.filter(f => !f.saved).length})`}
                 </button>
               )}
             </div>
