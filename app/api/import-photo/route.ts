@@ -64,9 +64,25 @@ Règles importantes :
     const data = await response.json()
     const text = data.content?.[0]?.text || ''
     
-    // Clean and parse JSON
-    const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const parsed = JSON.parse(clean)
+    // Try multiple JSON extraction strategies
+    let parsed
+    try {
+      // Strategy 1: direct parse
+      parsed = JSON.parse(text)
+    } catch {
+      try {
+        // Strategy 2: extract JSON block
+        const match = text.match(/\{[\s\S]*\}/)
+        if (match) parsed = JSON.parse(match[0])
+      } catch {
+        // Strategy 3: clean markdown fences
+        const clean = text
+          .replace(/```json\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim()
+        parsed = JSON.parse(clean)
+      }
+    }
 
     return NextResponse.json({ ok: true, fiches: parsed.fiches })
   } catch (err: unknown) {
