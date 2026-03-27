@@ -1,54 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const VALID_TYPES = ['plat', 'preparation']
+const VALID_PLAT_CATS = ['entrees', 'entrees-vege', 'plats-vege', 'plats-viande', 'plats-poisson', 'desserts']
+const VALID_PREP_CATS = ['pates', 'pasta', 'sauces', 'condiments', 'sucre', 'autre']
+
+function sanitizeFiche(f: Record<string, unknown>) {
+  const type = VALID_TYPES.includes(f.type as string) ? f.type as string : 'preparation'
+  const validCats = type === 'plat' ? VALID_PLAT_CATS : VALID_PREP_CATS
+  const categorie = validCats.includes(f.categorie as string) ? f.categorie as string : (type === 'plat' ? 'entrees' : 'autre')
+  return {
+    type,
+    categorie,
+    nom: (f.nom as string) || 'Sans nom',
+    source: f.source || null,
+    dressage: f.dressage || null,
+    saison: f.saison || null,
+    note_perso: f.note_perso || null,
+    ingredients: Array.isArray(f.ingredients) ? f.ingredients : [],
+    etapes: Array.isArray(f.etapes) ? f.etapes : [],
+    preparations_libres: f.preparations_libres || null,
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { images } = await req.json()
 
-    const prompt = `Tu es un assistant culinaire expert. Analyse ces photos de fiches techniques de cuisine et extrait toutes les informations pour créer des fiches structurées.
+    const prompt = `Tu es un assistant culinaire expert. Analyse ces photos de fiches techniques de cuisine.
 
-Pour chaque préparation ou plat visible sur les photos, retourne un objet JSON avec cette structure EXACTE :
-
+Retourne UNIQUEMENT un JSON valide avec cette structure :
 {
   "fiches": [
     {
       "type": "plat" ou "preparation",
-      "categorie": une des valeurs suivantes:
-        Pour type "plat": "entrees", "entrees-vege", "plats-vege", "plats-viande", "plats-poisson", "desserts"
-        Pour type "preparation": "pates", "pasta", "sauces", "condiments", "sucre", "autre",
-      "nom": "Nom du plat ou de la préparation",
-      "source": "Source ou inspiration si mentionnée (plat uniquement, sinon null)",
-      "dressage": "Instructions de dressage si présentes (plat uniquement, sinon null)",
+      "categorie": pour plat: "entrees"/"entrees-vege"/"plats-vege"/"plats-viande"/"plats-poisson"/"desserts", pour preparation: "pates"/"pasta"/"sauces"/"condiments"/"sucre"/"autre",
+      "nom": "Nom exact du plat ou préparation",
+      "source": "Source ou inspiration ou null",
+      "dressage": "Instructions de dressage ou null (plat uniquement)",
       "saison": "Printemps" ou "Été" ou "Automne" ou "Hiver" ou "Toute saison" ou null,
-      "note_perso": "Autres notes ou remarques ou null",
-      "ingredients": [
-        { "id": "1", "quantite": "200", "unite": "g", "nom": "Beurre doux" }
-      ],
-      "etapes": ["Étape 1...", "Étape 2..."],
-      "preparations_libres": "Liste des éléments qui composent ce plat (plat uniquement, sinon null)"
+      "note_perso": "Notes diverses ou null",
+      "ingredients": [{"id": "1", "quantite": "200", "unite": "g", "nom": "Beurre"}],
+      "etapes": ["Étape 1", "Étape 2"],
+      "preparations_libres": "Éléments du plat ou null"
     }
   ]
 }
 
-Règles importantes :
-- Si la fiche contient un plat principal avec plusieurs sous-préparations, crée UNE fiche plat ET autant de fiches préparation que nécessaire
-- Pour un plat, mets les éléments dans "preparations_libres" et crée des fiches séparées pour chaque préparation détaillée
-- Pour une préparation, remplis "ingredients" et "etapes"
-- Si tu ne vois pas d'information pour un champ, mets null
-- Réponds UNIQUEMENT avec le JSON valide, sans texte avant ou après, sans balises markdown`
+IMPORTANT:
+- "type" doit TOUJOURS être "plat" ou "preparation", jamais null
+- "nom" doit TOUJOURS être rempli avec le nom du plat/préparation
+- "categorie" doit TOUJOURS être une des valeurs listées ci-dessus
+- Si la photo montre un plat avec des sous-préparations, crée une fiche plat + des fiches préparation séparées
+- Réponds UNIQUEMENT avec le JSON, aucun texte autour`
 
     const content: Array<{type: string; source?: {type: string; media_type: string; data: string}; text?: string}> = []
-    
     for (const img of images) {
-      content.push({
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: img.mediaType,
-          data: img.data,
-        }
-      })
+      content.push({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })
     }
-    
     content.push({ type: 'text', text: prompt })
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -64,11 +72,9 @@ Règles importantes :
     const data = await response.json()
     const text = data.content?.[0]?.text || ''
 
-    // Try multiple JSON extraction strategies
     let parsed: { fiches?: unknown[] } = {}
-    try {
-      parsed = JSON.parse(text)
-    } catch {
+    try { parsed = JSON.parse(text) }
+    catch {
       try {
         const match = text.match(/\{[\s\S]*\}/)
         if (match) parsed = JSON.parse(match[0])
@@ -77,26 +83,23 @@ Règles importantes :
           const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
           parsed = JSON.parse(clean)
         } catch {
-          return NextResponse.json({ ok: false, error: `Impossible d'analyser la réponse. Réessayez avec une photo plus nette.` }, { status: 500 })
+          return NextResponse.json({ ok: false, error: 'Photo illisible — essayez avec une image plus nette.' }, { status: 500 })
         }
       }
     }
 
-    // Handle different possible response structures
-    let fiches: unknown[] = []
-    if (Array.isArray(parsed)) {
-      fiches = parsed
-    } else if (Array.isArray(parsed?.fiches)) {
-      fiches = parsed.fiches
-    } else if (parsed && typeof parsed === 'object') {
-      fiches = [parsed]
+    let rawFiches: unknown[] = []
+    if (Array.isArray(parsed)) rawFiches = parsed
+    else if (Array.isArray(parsed?.fiches)) rawFiches = parsed.fiches
+    else if (parsed && typeof parsed === 'object') rawFiches = [parsed]
+
+    if (rawFiches.length === 0) {
+      return NextResponse.json({ ok: false, error: 'Aucune fiche détectée — essayez avec une image plus lisible.' }, { status: 400 })
     }
 
-    if (fiches.length === 0) {
-      return NextResponse.json({ ok: false, error: 'Aucune fiche détectée dans la photo. Essayez avec une image plus lisible.' }, { status: 400 })
-    }
-
+    const fiches = rawFiches.map(f => sanitizeFiche(f as Record<string, unknown>))
     return NextResponse.json({ ok: true, fiches })
+
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erreur inconnue'
     return NextResponse.json({ ok: false, error: message }, { status: 500 })
