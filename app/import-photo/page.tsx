@@ -17,6 +17,7 @@ interface FichePreview {
   ingredients?: Ingredient[]
   etapes?: string[]
   preparations_libres?: string | null
+  source_preparation?: string | null
   saving?: boolean
   saved?: boolean
   error?: string
@@ -75,34 +76,11 @@ export default function ImportPhotoPage() {
     const fiche = fiches[idx]
     setFiches(prev => prev.map((f, i) => i === idx ? { ...f, saving: true, error: undefined } : f))
     try {
+      // Send the fiche directly (new format)
       const res = await fetch('/api/migrate/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipe: {
-            name: fiche.nom,          // save route expects "name"
-            imageUrl: null,
-            steps: fiche.etapes || [],
-            ingredients: fiche.ingredients || [],
-            category: fiche.categorie,
-            // Pass extra fields
-            source: fiche.source,
-            dressage: fiche.dressage,
-            saison: fiche.saison,
-            note_perso: fiche.note_perso,
-            preparations_libres: fiche.preparations_libres,
-          },
-          type: fiche.type,
-          categorie: fiche.categorie,
-          // Extra fields passed directly
-          extra: {
-            source: fiche.source,
-            dressage: fiche.dressage,
-            saison: fiche.saison,
-            note_perso: fiche.note_perso,
-            preparations_libres: fiche.preparations_libres,
-          }
-        })
+        body: JSON.stringify(fiche)
       })
       const data = await res.json()
       if (!data.ok) throw new Error(data.error)
@@ -130,19 +108,18 @@ export default function ImportPhotoPage() {
         Prends en photo une ou plusieurs pages d'une fiche technique — Claude les analyse et crée les fiches automatiquement.
       </p>
 
-      {/* Upload zone */}
       {status !== 'preview' && (
         <div className="form-section">
           <h2 className="form-section-title">Photos</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
-            💡 Si une fiche tient sur plusieurs pages, ajoute toutes les photos ensemble avant d'analyser.
+            💡 Fiche sur plusieurs pages ? Ajoute toutes les photos avant d'analyser.
           </p>
 
           <div className="image-upload-zone" style={{ marginBottom: 16 }}>
             <input type="file" accept="image/*" multiple onChange={handleFiles} />
             <div className="upload-icon">📷</div>
             <p className="upload-text">Cliquer ou glisser des photos</p>
-            <p className="upload-hint">Plusieurs pages d'une même fiche ? Ajoute-les toutes !</p>
+            <p className="upload-hint">Plusieurs pages possibles</p>
           </div>
 
           {images.length > 0 && (
@@ -150,10 +127,10 @@ export default function ImportPhotoPage() {
               {images.map((img, i) => (
                 <div key={i} style={{ position: 'relative' }}>
                   <Image src={img.preview} alt={`Photo ${i + 1}`} width={90} height={90} style={{ objectFit: 'cover', borderRadius: 8, border: '2px solid var(--border)' }} />
-                  <span style={{ position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.5)', color: 'white', fontSize: 10, borderRadius: 3, padding: '1px 5px' }}>
+                  <span style={{ position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: 10, borderRadius: 3, padding: '1px 5px' }}>
                     Page {i + 1}
                   </span>
-                  <button onClick={() => removeImage(i)} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#C04040', color: 'white', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                  <button onClick={() => removeImage(i)} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#C04040', color: 'white', border: 'none', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                 </div>
               ))}
             </div>
@@ -167,7 +144,6 @@ export default function ImportPhotoPage() {
         </div>
       )}
 
-      {/* Preview */}
       {status === 'preview' && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
@@ -196,8 +172,7 @@ export default function ImportPhotoPage() {
               borderLeft: `3px solid ${fiche.saved ? '#3D7A34' : fiche.error ? '#B0302A' : 'var(--accent)'}`,
               opacity: fiche.saved ? 0.65 : 1,
             }}>
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, gap: 12 }}>
                 <div>
                   <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, fontWeight: 500, marginBottom: 6 }}>{fiche.nom}</h2>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -208,7 +183,6 @@ export default function ImportPhotoPage() {
                       {getCatLabel(fiche.type, fiche.categorie)}
                     </span>
                     {fiche.saison && <span className="badge" style={{ background: '#F0F5EC', color: '#3D7A34' }}>{fiche.saison}</span>}
-                    {fiche.source && <span className="badge" style={{ background: '#F5F0E8', color: 'var(--text-secondary)' }}>📖 {fiche.source}</span>}
                   </div>
                 </div>
                 <div style={{ flexShrink: 0, textAlign: 'right' }}>
@@ -218,11 +192,14 @@ export default function ImportPhotoPage() {
                     </button>
                   )}
                   {fiche.saved && <span style={{ color: '#3D7A34', fontSize: 13, fontWeight: 500 }}>✓ Enregistrée</span>}
-                  {fiche.error && <p style={{ color: '#B0302A', fontSize: 11, marginTop: 4, maxWidth: 200 }}>{fiche.error}</p>}
+                  {fiche.error && <p style={{ color: '#B0302A', fontSize: 11, marginTop: 4, maxWidth: 180 }}>{fiche.error}</p>}
                 </div>
               </div>
 
-              {/* Éléments du plat */}
+              {fiche.source && (
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>📖 {fiche.source}</p>
+              )}
+
               {fiche.preparations_libres && (
                 <div style={{ marginBottom: 14, padding: '10px 14px', background: '#FAFAF7', borderRadius: 8 }}>
                   <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>Éléments du plat</p>
@@ -230,14 +207,15 @@ export default function ImportPhotoPage() {
                 </div>
               )}
 
-              {/* Ingrédients */}
               {fiche.ingredients && fiche.ingredients.length > 0 && (
                 <div style={{ marginBottom: 14 }}>
-                  <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Ingrédients</p>
+                  <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+                    Ingrédients ({fiche.ingredients.length})
+                  </p>
                   <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {fiche.ingredients.map((ing, i) => (
                       <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
-                        <span style={{ color: 'var(--accent)', fontWeight: 500, minWidth: 90 }}>{ing.quantite}{ing.unite ? ` ${ing.unite}` : ''}</span>
+                        <span style={{ color: 'var(--accent)', fontWeight: 500, minWidth: 90, flexShrink: 0 }}>{ing.quantite}{ing.unite ? ` ${ing.unite}` : ''}</span>
                         <span>{ing.nom}</span>
                       </li>
                     ))}
@@ -245,10 +223,11 @@ export default function ImportPhotoPage() {
                 </div>
               )}
 
-              {/* Étapes */}
               {fiche.etapes && fiche.etapes.length > 0 && (
                 <div style={{ marginBottom: 14 }}>
-                  <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Étapes</p>
+                  <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+                    Étapes ({fiche.etapes.length})
+                  </p>
                   <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {fiche.etapes.map((etape, i) => (
                       <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13.5 }}>
@@ -260,7 +239,6 @@ export default function ImportPhotoPage() {
                 </div>
               )}
 
-              {/* Dressage */}
               {fiche.dressage && (
                 <div style={{ marginBottom: 10, padding: '10px 14px', background: '#FAFAF7', borderRadius: 8 }}>
                   <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>Dressage</p>
@@ -268,7 +246,6 @@ export default function ImportPhotoPage() {
                 </div>
               )}
 
-              {/* Note */}
               {fiche.note_perso && (
                 <div style={{ padding: '10px 14px', background: '#FAFAF7', borderRadius: 8 }}>
                   <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>Note</p>
