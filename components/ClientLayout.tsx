@@ -22,9 +22,7 @@ export default function ClientLayout({ children, counts }: Props) {
 
       <div className="main-content">
         <div className="mobile-top">
-          <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Menu">
-            ☰
-          </button>
+          <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Menu">☰</button>
           <span className="mobile-title">Mes Fiches</span>
           <Link href="/import-photo" style={{ color: 'white', textDecoration: 'none', fontSize: 20, marginLeft: 'auto', paddingRight: 4 }} title="Importer depuis photo">
             📷
