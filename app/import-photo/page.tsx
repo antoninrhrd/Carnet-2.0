@@ -28,6 +28,28 @@ function getCatLabel(type: string, slug: string) {
   return section?.categories.find(c => c.slug === slug)?.label || slug
 }
 
+// Compress image to max 1MB before sending
+async function compressImage(dataUrl: string, mediaType: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = document.createElement('img')
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const MAX = 1200
+      let { width, height } = img
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+        else { width = Math.round(width * MAX / height); height = MAX }
+      }
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+      const compressed = canvas.toDataURL('image/jpeg', 0.75)
+      resolve(compressed.split(',')[1])
+    }
+    img.src = dataUrl
+  })
+}
+
 export default function ImportPhotoPage() {
   const [images, setImages] = useState<{ preview: string; base64: string; mediaType: string }[]>([])
   const [status, setStatus] = useState<'idle' | 'analyzing' | 'preview'>('idle')
@@ -39,9 +61,11 @@ export default function ImportPhotoPage() {
     const files = Array.from(e.target.files || [])
     const loaded = await Promise.all(files.map(file => new Promise<{preview: string; base64: string; mediaType: string}>((resolve) => {
       const reader = new FileReader()
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
         const result = ev.target?.result as string
-        resolve({ preview: result, base64: result.split(',')[1], mediaType: file.type })
+        // Compress before storing
+        const compressed = await compressImage(result, file.type)
+        resolve({ preview: result, base64: compressed, mediaType: 'image/jpeg' })
       }
       reader.readAsDataURL(file)
     })))
@@ -76,7 +100,6 @@ export default function ImportPhotoPage() {
     const fiche = fiches[idx]
     setFiches(prev => prev.map((f, i) => i === idx ? { ...f, saving: true, error: undefined } : f))
     try {
-      // Send the fiche directly (new format)
       const res = await fetch('/api/migrate/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -112,14 +135,14 @@ export default function ImportPhotoPage() {
         <div className="form-section">
           <h2 className="form-section-title">Photos</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
-            💡 Fiche sur plusieurs pages ? Ajoute toutes les photos avant d'analyser.
+            💡 Fiche sur plusieurs pages ? Ajoute toutes les photos avant d'analyser. Assure-toi que le texte est bien lisible et la photo bien éclairée.
           </p>
 
           <div className="image-upload-zone" style={{ marginBottom: 16 }}>
             <input type="file" accept="image/*" multiple onChange={handleFiles} />
             <div className="upload-icon">📷</div>
             <p className="upload-text">Cliquer ou glisser des photos</p>
-            <p className="upload-hint">Plusieurs pages possibles</p>
+            <p className="upload-hint">Plusieurs pages possibles — images compressées automatiquement</p>
           </div>
 
           {images.length > 0 && (
@@ -136,10 +159,14 @@ export default function ImportPhotoPage() {
             </div>
           )}
 
-          {error && <p style={{ color: '#B0302A', fontSize: 13, marginBottom: 12 }}>⚠️ {error}</p>}
+          {error && (
+            <div style={{ background: '#FDF0F0', border: '1px solid #E8B8B6', borderRadius: 8, padding: '10px 14px', marginBottom: 12 }}>
+              <p style={{ color: '#B0302A', fontSize: 13 }}>⚠️ {error}</p>
+            </div>
+          )}
 
           <button className="btn-primary" onClick={analyze} disabled={!images.length || status === 'analyzing'} style={{ fontSize: 15, padding: '11px 24px' }}>
-            {status === 'analyzing' ? '⏳ Analyse en cours…' : `✨ Analyser ${images.length > 1 ? `les ${images.length} photos` : 'la photo'}`}
+            {status === 'analyzing' ? '⏳ Analyse en cours… (peut prendre 20-30s)' : `✨ Analyser ${images.length > 1 ? `les ${images.length} photos` : 'la photo'}`}
           </button>
         </div>
       )}
