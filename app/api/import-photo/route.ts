@@ -8,10 +8,12 @@ function sanitizeFiche(f: Record<string, unknown>) {
   const type = VALID_TYPES.includes(f.type as string) ? f.type as string : 'preparation'
   const validCats = type === 'plat' ? VALID_PLAT_CATS : VALID_PREP_CATS
   const categorie = validCats.includes(f.categorie as string) ? f.categorie as string : (type === 'plat' ? 'entrees' : 'autre')
+  
+  // Keep ALL fields including ingredients, etapes, etc.
   return {
     type,
     categorie,
-    nom: (f.nom as string) || 'Sans nom',
+    nom: (f.nom as string) || (f.name as string) || 'Sans nom',
     source: f.source || null,
     dressage: f.dressage || null,
     saison: f.saison || null,
@@ -19,6 +21,7 @@ function sanitizeFiche(f: Record<string, unknown>) {
     ingredients: Array.isArray(f.ingredients) ? f.ingredients : [],
     etapes: Array.isArray(f.etapes) ? f.etapes : [],
     preparations_libres: f.preparations_libres || null,
+    source_preparation: f.source_preparation || f.source || null,
   }
 }
 
@@ -28,30 +31,31 @@ export async function POST(req: NextRequest) {
 
     const prompt = `Tu es un assistant culinaire expert. Analyse ces photos de fiches techniques de cuisine.
 
-Retourne UNIQUEMENT un JSON valide avec cette structure :
+Retourne UNIQUEMENT un JSON valide avec cette structure exacte :
 {
   "fiches": [
     {
       "type": "plat" ou "preparation",
-      "categorie": pour plat: "entrees"/"entrees-vege"/"plats-vege"/"plats-viande"/"plats-poisson"/"desserts", pour preparation: "pates"/"pasta"/"sauces"/"condiments"/"sucre"/"autre",
+      "categorie": pour plat choisir parmi: "entrees"/"entrees-vege"/"plats-vege"/"plats-viande"/"plats-poisson"/"desserts", pour preparation choisir parmi: "pates"/"pasta"/"sauces"/"condiments"/"sucre"/"autre",
       "nom": "Nom exact du plat ou préparation",
-      "source": "Source ou inspiration ou null",
-      "dressage": "Instructions de dressage ou null (plat uniquement)",
+      "source": "Source ou chef ou null",
+      "dressage": "Instructions de dressage ou null",
       "saison": "Printemps" ou "Été" ou "Automne" ou "Hiver" ou "Toute saison" ou null,
-      "note_perso": "Notes diverses ou null",
+      "note_perso": "Notes ou remarques ou null",
       "ingredients": [{"id": "1", "quantite": "200", "unite": "g", "nom": "Beurre"}],
-      "etapes": ["Étape 1", "Étape 2"],
-      "preparations_libres": "Éléments du plat ou null"
+      "etapes": ["Étape 1 complète", "Étape 2 complète"],
+      "preparations_libres": "Liste des éléments/composants du plat ou null"
     }
   ]
 }
 
-IMPORTANT:
-- "type" doit TOUJOURS être "plat" ou "preparation", jamais null
-- "nom" doit TOUJOURS être rempli avec le nom du plat/préparation
-- "categorie" doit TOUJOURS être une des valeurs listées ci-dessus
-- Si la photo montre un plat avec des sous-préparations, crée une fiche plat + des fiches préparation séparées
-- Réponds UNIQUEMENT avec le JSON, aucun texte autour`
+RÈGLES STRICTES:
+- "type" doit être exactement "plat" ou "preparation"
+- "nom" doit être le nom du plat/préparation visible sur la photo
+- "categorie" doit être une des valeurs listées
+- Si plusieurs préparations sur la même photo, crée plusieurs objets dans "fiches"
+- Retranscris TOUT le contenu visible : tous les ingrédients avec quantités, toutes les étapes
+- Réponds UNIQUEMENT avec le JSON, rien d'autre`
 
     const content: Array<{type: string; source?: {type: string; media_type: string; data: string}; text?: string}> = []
     for (const img of images) {
