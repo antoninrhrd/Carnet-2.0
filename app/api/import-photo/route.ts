@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Increase Vercel function timeout to 60s
 export const maxDuration = 60
 
 const VALID_TYPES = ['plat', 'preparation']
@@ -28,6 +27,11 @@ function sanitizeFiche(f: Record<string, unknown>) {
 
 export async function POST(req: NextRequest) {
   try {
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ ok: false, error: 'Clé API Anthropic manquante — ajoutez ANTHROPIC_API_KEY dans les variables Vercel.' }, { status: 500 })
+    }
+
     const { images } = await req.json()
 
     const prompt = `Tu es un assistant culinaire expert. Analyse ces photos de fiches techniques de cuisine.
@@ -58,9 +62,13 @@ Retourne UNIQUEMENT un JSON valide avec cette structure exacte, sans aucun texte
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-opus-4-6',
         max_tokens: 4000,
         messages: [{ role: 'user', content }],
       })
@@ -68,7 +76,7 @@ Retourne UNIQUEMENT un JSON valide avec cette structure exacte, sans aucun texte
 
     if (!response.ok) {
       const errText = await response.text()
-      return NextResponse.json({ ok: false, error: `Erreur API: ${response.status} — ${errText.slice(0, 200)}` }, { status: 500 })
+      return NextResponse.json({ ok: false, error: `Erreur API: ${response.status} — ${errText.slice(0, 300)}` }, { status: 500 })
     }
 
     const data = await response.json()
@@ -89,7 +97,7 @@ Retourne UNIQUEMENT un JSON valide avec cette structure exacte, sans aucun texte
           const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
           parsed = JSON.parse(clean)
         } catch {
-          return NextResponse.json({ ok: false, error: `Photo illisible. Réessayez avec une image plus nette et plus lumineuse.` }, { status: 500 })
+          return NextResponse.json({ ok: false, error: 'Photo illisible. Réessayez avec une image plus nette.' }, { status: 500 })
         }
       }
     }
