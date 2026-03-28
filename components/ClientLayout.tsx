@@ -28,7 +28,6 @@ export default function ClientLayout({ children, counts }: Props) {
             📷
           </Link>
         </div>
-
         <div className="content-inner">{children}</div>
       </div>
     </div>
