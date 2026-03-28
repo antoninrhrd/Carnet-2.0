@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { revalidatePath } from 'next/cache'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const supabase = createServerClient()
 
-    // Support direct fiche object (from import-photo) OR recipe wrapper (from migration)
     const isDirectFiche = body.nom !== undefined
-    
+
     let ficheData: Record<string, unknown>
 
     if (isDirectFiche) {
-      // Direct fiche object from import-photo
       ficheData = {
         type: body.type,
         categorie: body.categorie,
@@ -28,7 +27,6 @@ export async function POST(req: NextRequest) {
         source_preparation: body.source_preparation || null,
       }
     } else {
-      // Legacy migration format with recipe wrapper
       const { recipe, type, categorie } = body
       const nom = recipe.name || recipe.nom || 'Sans nom'
       ficheData = { type, categorie, nom, image_url: recipe.imageUrl || null }
@@ -57,6 +55,12 @@ export async function POST(req: NextRequest) {
 
     const { error } = await supabase.from('fiches').insert(ficheData)
     if (error) throw new Error(error.message)
+
+    // Revalidate all relevant pages so fiches appear immediately
+    revalidatePath('/')
+    revalidatePath('/plats/[categorie]')
+    revalidatePath('/preparations/[categorie]')
+    revalidatePath('/produits')
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
