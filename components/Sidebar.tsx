@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { NAVIGATION } from '@/lib/constants'
@@ -32,6 +32,29 @@ export default function Sidebar({ isOpen, onClose, counts }: SidebarProps) {
         </Link>
       </div>
 
+      {/* Import photo — juste sous le header, toujours visible */}
+      <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--sidebar-border)' }}>
+        <Link
+          href="/import-photo"
+          onClick={onClose}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '9px 12px',
+            borderRadius: 8,
+            background: 'rgba(255,255,255,0.07)',
+            textDecoration: 'none',
+            color: 'var(--sidebar-text)',
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13.5,
+          }}
+        >
+          <span style={{ fontSize: 16 }}>📷</span>
+          <span>Importer depuis photo</span>
+        </Link>
+      </div>
+
       <nav className="sidebar-nav">
         {NAVIGATION.map(section => {
           const hasCats = section.categories.length > 0
@@ -60,9 +83,7 @@ export default function Sidebar({ isOpen, onClose, counts }: SidebarProps) {
               {!hasCats && (
                 <div className="sidebar-categories">
                   <div className={`sidebar-item${isActive('/produits') ? ' active' : ''}`}>
-                    <Link href="/produits" className="sidebar-item-link" onClick={onClose}>
-                      Toutes les fiches
-                    </Link>
+                    <Link href="/produits" className="sidebar-item-link" onClick={onClose}>Toutes les fiches</Link>
                     <Link href="/nouvelle-fiche?type=produit&categorie=produits&section=produits" className="sidebar-add" title="Nouvelle fiche produit">+</Link>
                   </div>
                 </div>
@@ -87,30 +108,6 @@ export default function Sidebar({ isOpen, onClose, counts }: SidebarProps) {
           )
         })}
       </nav>
-
-      {/* Import photo — visible sur desktop ET mobile */}
-      <div style={{ padding: '12px 12px 24px', borderTop: '1px solid var(--sidebar-border)', marginTop: 'auto' }}>
-        <Link
-          href="/import-photo"
-          onClick={onClose}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 12px',
-            borderRadius: 8,
-            background: 'rgba(255,255,255,0.07)',
-            textDecoration: 'none',
-            color: 'var(--sidebar-text)',
-            fontFamily: 'DM Sans, sans-serif',
-            fontSize: 13.5,
-            transition: 'background 0.15s',
-          }}
-        >
-          <span style={{ fontSize: 16 }}>📷</span>
-          <span>Importer depuis photo</span>
-        </Link>
-      </div>
     </aside>
   )
 }
