@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { NAVIGATION } from '@/lib/constants'
 import type { Ingredient } from '@/lib/types'
 
@@ -28,8 +29,7 @@ function getCatLabel(type: string, slug: string) {
   return section?.categories.find(c => c.slug === slug)?.label || slug
 }
 
-// Compress image to max 1MB before sending
-async function compressImage(dataUrl: string, mediaType: string): Promise<string> {
+async function compressImage(dataUrl: string): Promise<string> {
   return new Promise((resolve) => {
     const img = document.createElement('img')
     img.onload = () => {
@@ -43,15 +43,15 @@ async function compressImage(dataUrl: string, mediaType: string): Promise<string
       canvas.width = width
       canvas.height = height
       canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
-      const compressed = canvas.toDataURL('image/jpeg', 0.75)
-      resolve(compressed.split(',')[1])
+      resolve(canvas.toDataURL('image/jpeg', 0.75).split(',')[1])
     }
     img.src = dataUrl
   })
 }
 
 export default function ImportPhotoPage() {
-  const [images, setImages] = useState<{ preview: string; base64: string; mediaType: string }[]>([])
+  const router = useRouter()
+  const [images, setImages] = useState<{ preview: string; base64: string }[]>([])
   const [status, setStatus] = useState<'idle' | 'analyzing' | 'preview'>('idle')
   const [isSaving, setIsSaving] = useState(false)
   const [fiches, setFiches] = useState<FichePreview[]>([])
@@ -59,13 +59,12 @@ export default function ImportPhotoPage() {
 
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || [])
-    const loaded = await Promise.all(files.map(file => new Promise<{preview: string; base64: string; mediaType: string}>((resolve) => {
+    const loaded = await Promise.all(files.map(file => new Promise<{preview: string; base64: string}>((resolve) => {
       const reader = new FileReader()
       reader.onload = async (ev) => {
         const result = ev.target?.result as string
-        // Compress before storing
-        const compressed = await compressImage(result, file.type)
-        resolve({ preview: result, base64: compressed, mediaType: 'image/jpeg' })
+        const compressed = await compressImage(result)
+        resolve({ preview: result, base64: compressed })
       }
       reader.readAsDataURL(file)
     })))
@@ -84,7 +83,7 @@ export default function ImportPhotoPage() {
       const res = await fetch('/api/import-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images: images.map(i => ({ data: i.base64, mediaType: i.mediaType })) })
+        body: JSON.stringify({ images: images.map(i => ({ data: i.base64, mediaType: 'image/jpeg' })) })
       })
       const data = await res.json()
       if (!data.ok) throw new Error(data.error)
@@ -121,6 +120,11 @@ export default function ImportPhotoPage() {
     setIsSaving(false)
   }
 
+  function goToApp() {
+    // Hard reload to bypass cache
+    window.location.href = '/'
+  }
+
   const allSaved = fiches.length > 0 && fiches.every(f => f.saved)
 
   return (
@@ -135,14 +139,14 @@ export default function ImportPhotoPage() {
         <div className="form-section">
           <h2 className="form-section-title">Photos</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
-            💡 Fiche sur plusieurs pages ? Ajoute toutes les photos avant d'analyser. Assure-toi que le texte est bien lisible et la photo bien éclairée.
+            💡 Fiche sur plusieurs pages ? Ajoute toutes les photos avant d'analyser.
           </p>
 
           <div className="image-upload-zone" style={{ marginBottom: 16 }}>
             <input type="file" accept="image/*" multiple onChange={handleFiles} />
             <div className="upload-icon">📷</div>
             <p className="upload-text">Cliquer ou glisser des photos</p>
-            <p className="upload-hint">Plusieurs pages possibles — images compressées automatiquement</p>
+            <p className="upload-hint">Plusieurs pages possibles</p>
           </div>
 
           {images.length > 0 && (
@@ -166,7 +170,7 @@ export default function ImportPhotoPage() {
           )}
 
           <button className="btn-primary" onClick={analyze} disabled={!images.length || status === 'analyzing'} style={{ fontSize: 15, padding: '11px 24px' }}>
-            {status === 'analyzing' ? '⏳ Analyse en cours… (peut prendre 20-30s)' : `✨ Analyser ${images.length > 1 ? `les ${images.length} photos` : 'la photo'}`}
+            {status === 'analyzing' ? '⏳ Analyse en cours… (20-30s)' : `✨ Analyser ${images.length > 1 ? `les ${images.length} photos` : 'la photo'}`}
           </button>
         </div>
       )}
@@ -190,7 +194,9 @@ export default function ImportPhotoPage() {
           {allSaved && (
             <div style={{ background: '#F0F5EC', border: '1px solid #B8D4A8', borderRadius: 10, padding: '14px 18px', marginBottom: 20 }}>
               <p style={{ color: '#3D7A34', fontSize: 14, fontWeight: 500 }}>✅ Toutes les fiches ont été enregistrées !</p>
-              <Link href="/" className="btn-primary" style={{ marginTop: 10, display: 'inline-flex' }}>Voir mes fiches →</Link>
+              <button onClick={goToApp} className="btn-primary" style={{ marginTop: 10 }}>
+                Voir mes fiches →
+              </button>
             </div>
           )}
 
@@ -223,9 +229,7 @@ export default function ImportPhotoPage() {
                 </div>
               </div>
 
-              {fiche.source && (
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>📖 {fiche.source}</p>
-              )}
+              {fiche.source && <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>📖 {fiche.source}</p>}
 
               {fiche.preparations_libres && (
                 <div style={{ marginBottom: 14, padding: '10px 14px', background: '#FAFAF7', borderRadius: 8 }}>
