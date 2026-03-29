@@ -21,13 +21,21 @@ export default function ClientLayout({ children, counts }: Props) {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} counts={counts} />
 
       <div className="main-content">
+        {/* Barre mobile */}
         <div className="mobile-top">
           <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Menu">☰</button>
-          <span className="mobile-title">Mes Fiches</span>
-          <Link href="/import-photo" style={{ color: 'white', textDecoration: 'none', fontSize: 20, marginLeft: 'auto', paddingRight: 4 }} title="Importer depuis photo">
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <span className="mobile-title">Mes Fiches</span>
+          </Link>
+          <Link
+            href="/import-photo"
+            style={{ color: 'white', textDecoration: 'none', fontSize: 22, marginLeft: 'auto', padding: '0 4px' }}
+            title="Importer depuis photo"
+          >
             📷
           </Link>
         </div>
+
         <div className="content-inner">{children}</div>
       </div>
     </div>
