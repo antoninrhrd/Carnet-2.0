@@ -32,8 +32,8 @@ export default function Sidebar({ isOpen, onClose, counts }: SidebarProps) {
         </Link>
       </div>
 
-      {/* Import photo — juste sous le header, toujours visible */}
-      <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--sidebar-border)' }}>
+      {/* Import photo — toujours visible en haut, avant le scroll */}
+      <div style={{ padding: '10px 12px 6px', borderBottom: '1px solid var(--sidebar-border)' }}>
         <Link
           href="/import-photo"
           onClick={onClose}
@@ -41,16 +41,17 @@ export default function Sidebar({ isOpen, onClose, counts }: SidebarProps) {
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            padding: '9px 12px',
+            padding: '10px 14px',
             borderRadius: 8,
-            background: 'rgba(255,255,255,0.07)',
+            background: 'rgba(255,255,255,0.08)',
             textDecoration: 'none',
-            color: 'var(--sidebar-text)',
+            color: '#FFFFFF',
             fontFamily: 'DM Sans, sans-serif',
             fontSize: 13.5,
+            fontWeight: 500,
           }}
         >
-          <span style={{ fontSize: 16 }}>📷</span>
+          <span style={{ fontSize: 17 }}>📷</span>
           <span>Importer depuis photo</span>
         </Link>
       </div>
