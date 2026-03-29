@@ -30,7 +30,7 @@ export default function SearchBar() {
   }
 
   return (
-    <div style={{ position: 'relative', marginBottom: 20, maxWidth: 420 }}>
+    <div style={{ position: 'relative', marginBottom: 16, width: '100%', maxWidth: 480 }}>
       <span style={{
         position: 'absolute',
         left: 13,
@@ -39,6 +39,7 @@ export default function SearchBar() {
         fontSize: 16,
         opacity: 0.4,
         pointerEvents: 'none',
+        zIndex: 1,
       }}>🔍</span>
       <input
         type="text"
@@ -46,7 +47,7 @@ export default function SearchBar() {
         onChange={handleChange}
         placeholder="Rechercher une fiche…"
         className="field-input"
-        style={{ paddingLeft: 38, paddingRight: value ? 36 : 13 }}
+        style={{ paddingLeft: 38, paddingRight: value ? 36 : 13, width: '100%', boxSizing: 'border-box' }}
       />
       {value && (
         <button
@@ -59,9 +60,10 @@ export default function SearchBar() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            fontSize: 16,
+            fontSize: 18,
             color: 'var(--text-muted)',
             lineHeight: 1,
+            zIndex: 1,
           }}
         >
           ×
@@ -70,4 +72,3 @@ export default function SearchBar() {
     </div>
   )
 }
-
