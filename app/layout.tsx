@@ -3,6 +3,8 @@ import './globals.css'
 import ClientLayout from '@/components/ClientLayout'
 import { createServerClient } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Mes Fiches',
   description: 'Mon carnet de recettes, plats et fiches produits',
