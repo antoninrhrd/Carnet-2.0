@@ -19,7 +19,7 @@ function getCategoriesForType(type: string) {
 export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   const [preview, setPreview] = useState<string | null>(fiche.image_url || null)
   const [isPending, startTransition] = useTransition()
-  const [type, setType] = useState(fiche.type)
+  const [type, setType] = useState<string>(fiche.type)
   const [categorie, setCategorie] = useState(fiche.categorie)
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     fiche.ingredients?.length ? fiche.ingredients : [newIngredient()]
