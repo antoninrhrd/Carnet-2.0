@@ -11,7 +11,6 @@ function newIngredient(): Ingredient {
   return { id: Math.random().toString(36).slice(2), quantite: '', unite: '', nom: '' }
 }
 
-// Get categories for a given type
 function getCategoriesForType(type: string) {
   const section = NAVIGATION.find(s => s.type === type)
   return section?.categories || []
@@ -20,6 +19,7 @@ function getCategoriesForType(type: string) {
 export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   const [preview, setPreview] = useState<string | null>(fiche.image_url || null)
   const [isPending, startTransition] = useTransition()
+  const [type, setType] = useState(fiche.type)
   const [categorie, setCategorie] = useState(fiche.categorie)
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     fiche.ingredients?.length ? fiche.ingredients : [newIngredient()]
@@ -32,7 +32,15 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   )
   const formRef = useRef<HTMLFormElement>(null)
 
-  const categories = getCategoriesForType(fiche.type)
+  const categories = getCategoriesForType(type)
+
+  function handleTypeChange(newType: string) {
+    setType(newType)
+    // Reset categorie to first valid option for new type
+    const cats = getCategoriesForType(newType)
+    if (cats.length > 0) setCategorie(cats[0].slug)
+    else setCategorie('produits')
+  }
 
   function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -54,12 +62,13 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const fd = new FormData(formRef.current!)
-    fd.set('categorie', categorie) // Force la nouvelle catégorie depuis le state
-    if (fiche.type === 'preparation') {
+    fd.set('type', type)
+    fd.set('categorie', categorie)
+    if (type === 'preparation') {
       fd.set('ingredients', JSON.stringify(ingredients.filter(i => i.nom.trim())))
       fd.set('etapes', JSON.stringify(etapes.filter(s => s.trim())))
     }
-    if (fiche.type === 'plat') {
+    if (type === 'plat') {
       fd.set('preparation_ids', JSON.stringify(preparationIds))
     }
     startTransition(() => updateFiche(fiche.id, fd))
@@ -67,10 +76,47 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit}>
-      <input type="hidden" name="type" value={fiche.type} />
       <input type="hidden" name="existing_image_url" value={fiche.image_url || ''} />
 
-      {/* Catégorie — always shown if there are subcategories */}
+      {/* ── TYPE ── */}
+      <div className="form-section">
+        <h2 className="form-section-title">Type de fiche</h2>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {NAVIGATION.filter(s => s.type !== 'produit').map(s => (
+            <button
+              key={s.type}
+              type="button"
+              onClick={() => handleTypeChange(s.type)}
+              style={{
+                flex: 1,
+                padding: '10px 14px',
+                borderRadius: 8,
+                border: `2px solid ${type === s.type ? 'var(--accent)' : 'var(--border)'}`,
+                background: type === s.type ? 'var(--accent-light)' : 'transparent',
+                cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: 13.5,
+                fontWeight: type === s.type ? 500 : 400,
+                color: type === s.type ? 'var(--accent)' : 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'all 0.15s',
+              }}
+            >
+              <span>{s.emoji}</span>
+              <span>{s.label}</span>
+            </button>
+          ))}
+        </div>
+        {type !== fiche.type && (
+          <p style={{ fontSize: 12, color: 'var(--accent)', marginTop: 8 }}>
+            ⚠️ Tu changes le type de fiche — certains champs seront réinitialisés.
+          </p>
+        )}
+      </div>
+
+      {/* ── CATÉGORIE ── */}
       {categories.length > 0 && (
         <div className="form-section">
           <h2 className="form-section-title">Catégorie</h2>
@@ -87,7 +133,7 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
       )}
 
       {/* ── PLAT ── */}
-      {fiche.type === 'plat' && (
+      {type === 'plat' && (
         <>
           <div className="form-section">
             <h2 className="form-section-title">Informations générales</h2>
@@ -111,13 +157,7 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
           </div>
           <div className="form-section">
             <h2 className="form-section-title">Éléments du plat</h2>
-            <textarea
-              name="preparations_libres"
-              className="field-textarea"
-              placeholder="Ex. Pickles maison, huile de truffe, fleur de sel…"
-              rows={3}
-              defaultValue={fiche.preparations_libres || ''}
-            />
+            <textarea name="preparations_libres" className="field-textarea" rows={3} defaultValue={fiche.preparations_libres || ''} />
           </div>
           <div className="form-section">
             <h2 className="form-section-title">Préparations associées</h2>
@@ -134,7 +174,7 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
       )}
 
       {/* ── PREPARATION ── */}
-      {fiche.type === 'preparation' && (
+      {type === 'preparation' && (
         <>
           <div className="form-section">
             <h2 className="form-section-title">Informations générales</h2>
@@ -184,84 +224,36 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
           </div>
           <div className="form-section">
             <h2 className="form-section-title">Source / Inspiration</h2>
-            <input
-              name="source_preparation"
-              className="field-input"
-              placeholder="Ex. Chef Troisgros, livre Escoffier…"
-              defaultValue={fiche.source_preparation || ''}
-            />
+            <input name="source_preparation" className="field-input" placeholder="Ex. Chef Troisgros…" defaultValue={fiche.source_preparation || ''} />
           </div>
         </>
       )}
 
-      {/* ── PRODUIT ── */}
-      {fiche.type === 'produit' && (
-        <>
-          <div className="form-section">
-            <h2 className="form-section-title">Produit</h2>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="field-label">Nom *</label>
-              <input name="nom" required className="field-input" defaultValue={fiche.nom} />
-            </div>
+      {/* ── IMAGE (plat + prépa) ── */}
+      {type !== 'produit' && (
+        <div className="form-section">
+          <h2 className="form-section-title">Photo</h2>
+          <div className="image-upload-zone">
+            <input type="file" name="image" accept="image/*" onChange={handleImage} />
+            {preview ? (
+              <Image src={preview} alt="Aperçu" width={600} height={220} className="image-preview" style={{ objectFit: 'cover' }} />
+            ) : (
+              <>
+                <div className="upload-icon">📷</div>
+                <p className="upload-text">Changer la photo</p>
+                <p className="upload-hint">JPG, PNG, WebP — max 5 Mo</p>
+              </>
+            )}
           </div>
-          <div className="form-section">
-            <h2 className="form-section-title">Fourchette de prix (€/kg)</h2>
-            <div className="form-row">
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="field-label">Prix min</label>
-                <input name="prix_min" type="number" min="0" step="0.01" className="field-input" defaultValue={fiche.prix_min ?? ''} />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="field-label">Prix max</label>
-                <input name="prix_max" type="number" min="0" step="0.01" className="field-input" defaultValue={fiche.prix_max ?? ''} />
-              </div>
-            </div>
-          </div>
-          <div className="form-section">
-            <h2 className="form-section-title">Note libre</h2>
-            <textarea name="note_libre" className="field-textarea" rows={6} defaultValue={fiche.note_libre || ''} />
-          </div>
-          <div className="form-section">
-            <h2 className="form-section-title">Photo</h2>
-            <div className="image-upload-zone">
-              <input type="file" name="image" accept="image/*" onChange={handleImage} />
-              {preview ? (
-                <Image src={preview} alt="Aperçu" width={600} height={220} className="image-preview" style={{ objectFit: 'cover' }} />
-              ) : (
-                <>
-                  <div className="upload-icon">📷</div>
-                  <p className="upload-text">Changer la photo</p>
-                  <p className="upload-hint">JPG, PNG, WebP — max 5 Mo</p>
-                </>
-              )}
-            </div>
-          </div>
-        </>
+        </div>
       )}
 
-      {/* Note (plat + prépa) */}
-      {fiche.type !== 'produit' && (
-        <>
-          <div className="form-section">
-            <h2 className="form-section-title">Photo</h2>
-            <div className="image-upload-zone">
-              <input type="file" name="image" accept="image/*" onChange={handleImage} />
-              {preview ? (
-                <Image src={preview} alt="Aperçu" width={600} height={220} className="image-preview" style={{ objectFit: 'cover' }} />
-              ) : (
-                <>
-                  <div className="upload-icon">📷</div>
-                  <p className="upload-text">Changer la photo</p>
-                  <p className="upload-hint">JPG, PNG, WebP — max 5 Mo</p>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="form-section">
-            <h2 className="form-section-title">Note personnelle</h2>
-            <textarea name="note_perso" className="field-textarea" rows={3} defaultValue={fiche.note_perso || ''} />
-          </div>
-        </>
+      {/* ── NOTE (plat + prépa) ── */}
+      {type !== 'produit' && (
+        <div className="form-section">
+          <h2 className="form-section-title">Note personnelle</h2>
+          <textarea name="note_perso" className="field-textarea" rows={3} defaultValue={fiche.note_perso || ''} />
+        </div>
       )}
 
       <div className="form-actions">
