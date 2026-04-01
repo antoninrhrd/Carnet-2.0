@@ -79,12 +79,15 @@ export async function updateFiche(id: string, formData: FormData) {
   const categorie = formData.get('categorie') as string
   const nom = formData.get('nom') as string
 
+  // Fetch old fiche to revalidate old section too
+  const { data: oldFiche } = await supabase.from('fiches').select('type, categorie').eq('id', id).single()
+
   const imageFile = formData.get('image') as File
   const existingImage = formData.get('existing_image_url') as string | null
   const newImageUrl = await uploadImage(supabase, imageFile, type)
   const imageUrl = newImageUrl || existingImage
 
-  let ficheData: Record<string, unknown> = { nom, categorie, image_url: imageUrl }
+  let ficheData: Record<string, unknown> = { nom, type, categorie, image_url: imageUrl }
 
   if (type === 'plat') {
     const prepIds = formData.get('preparation_ids')
@@ -96,6 +99,7 @@ export async function updateFiche(id: string, formData: FormData) {
       note_perso: formData.get('note_perso') || null,
       preparation_ids: prepIds ? JSON.parse(prepIds as string) : [],
       preparations_libres: formData.get('preparations_libres') || null,
+      ingredients: [], etapes: [], source_preparation: null,
     }
   } else if (type === 'preparation') {
     ficheData = {
@@ -105,6 +109,7 @@ export async function updateFiche(id: string, formData: FormData) {
       saison: formData.get('saison') || null,
       note_perso: formData.get('note_perso') || null,
       source_preparation: formData.get('source_preparation') || null,
+      source: null, dressage: null, preparation_ids: [], preparations_libres: null,
     }
   } else if (type === 'produit') {
     const pMin = formData.get('prix_min')
@@ -120,10 +125,20 @@ export async function updateFiche(id: string, formData: FormData) {
   const { error } = await supabase.from('fiches').update(ficheData).eq('id', id)
   if (error) throw new Error(error.message)
 
-  const section = type === 'plat' ? 'plats' : type === 'preparation' ? 'preparations' : null
-  if (section) revalidatePath(`/${section}/${categorie}`)
+  // Revalidate old section
+  if (oldFiche) {
+    const oldSection = oldFiche.type === 'plat' ? 'plats' : oldFiche.type === 'preparation' ? 'preparations' : null
+    if (oldSection) revalidatePath(`/${oldSection}/${oldFiche.categorie}`)
+    else revalidatePath('/produits')
+  }
+
+  // Revalidate new section
+  const newSection = type === 'plat' ? 'plats' : type === 'preparation' ? 'preparations' : null
+  if (newSection) revalidatePath(`/${newSection}/${categorie}`)
   else revalidatePath('/produits')
   revalidatePath(`/fiche/${id}`)
+  revalidatePath('/')
+
   redirect(`/fiche/${id}`)
 }
 
