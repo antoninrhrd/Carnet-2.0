@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useState } from 'react'
 import type { Fiche } from '@/lib/types'
 import { SAISON_STYLE } from '@/lib/constants'
@@ -18,6 +17,8 @@ function placeholderClass(categorie: string): string {
     'pasta': 'placeholder-pasta',
     'sauces': 'placeholder-sauces',
     'condiments': 'placeholder-condiments',
+    'sucre': 'placeholder-default',
+    'autre': 'placeholder-default',
     'produits': 'placeholder-produits',
   }
   return map[categorie] || 'placeholder-default'
@@ -36,13 +37,14 @@ export default function FicheCard({ fiche }: { fiche: Fiche }) {
     <Link href={`/fiche/${fiche.id}`} className="fiche-card">
       <div className="fiche-card-media">
         {showImage ? (
-          <Image
+          // Use plain <img> to avoid Next.js domain restrictions
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={fiche.image_url!}
             alt={fiche.nom || ''}
-            fill
             className="fiche-card-img"
-            sizes="(max-width: 480px) 50vw, (max-width: 1024px) 33vw, 220px"
             onError={() => setImgError(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
           <div className={`fiche-card-placeholder ${placeholderClass(fiche.categorie)}`}>
