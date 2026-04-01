@@ -18,6 +18,11 @@ async function uploadImage(supabase: ReturnType<typeof createServerClient>, file
   return publicUrl
 }
 
+function revalidateAll() {
+  // Revalidate entire layout — covers all dynamic routes
+  revalidatePath('/', 'layout')
+}
+
 export async function createFiche(formData: FormData) {
   const supabase = createServerClient()
   const type = formData.get('type') as string
@@ -63,14 +68,8 @@ export async function createFiche(formData: FormData) {
   const { data, error } = await supabase.from('fiches').insert(ficheData).select().single()
   if (error) throw new Error(error.message)
 
-  const section = type === 'plat' ? 'plats' : type === 'preparation' ? 'preparations' : null
-  if (section) {
-    revalidatePath(`/${section}/${categorie}`)
-    redirect(`/fiche/${data.id}`)
-  } else {
-    revalidatePath('/produits')
-    redirect(`/fiche/${data.id}`)
-  }
+  revalidateAll()
+  redirect(`/fiche/${data.id}`)
 }
 
 export async function updateFiche(id: string, formData: FormData) {
@@ -78,9 +77,6 @@ export async function updateFiche(id: string, formData: FormData) {
   const type = formData.get('type') as string
   const categorie = formData.get('categorie') as string
   const nom = formData.get('nom') as string
-
-  // Fetch old fiche to revalidate old section too
-  const { data: oldFiche } = await supabase.from('fiches').select('type, categorie').eq('id', id).single()
 
   const imageFile = formData.get('image') as File
   const existingImage = formData.get('existing_image_url') as string | null
@@ -125,20 +121,7 @@ export async function updateFiche(id: string, formData: FormData) {
   const { error } = await supabase.from('fiches').update(ficheData).eq('id', id)
   if (error) throw new Error(error.message)
 
-  // Revalidate old section
-  if (oldFiche) {
-    const oldSection = oldFiche.type === 'plat' ? 'plats' : oldFiche.type === 'preparation' ? 'preparations' : null
-    if (oldSection) revalidatePath(`/${oldSection}/${oldFiche.categorie}`)
-    else revalidatePath('/produits')
-  }
-
-  // Revalidate new section
-  const newSection = type === 'plat' ? 'plats' : type === 'preparation' ? 'preparations' : null
-  if (newSection) revalidatePath(`/${newSection}/${categorie}`)
-  else revalidatePath('/produits')
-  revalidatePath(`/fiche/${id}`)
-  revalidatePath('/')
-
+  revalidateAll()
   redirect(`/fiche/${id}`)
 }
 
@@ -147,12 +130,9 @@ export async function deleteFiche(id: string, type: string, categorie: string) {
   const { error } = await supabase.from('fiches').delete().eq('id', id)
   if (error) throw new Error(error.message)
 
+  revalidateAll()
+
   const section = type === 'plat' ? 'plats' : type === 'preparation' ? 'preparations' : null
-  if (section) {
-    revalidatePath(`/${section}/${categorie}`)
-    redirect(`/${section}/${categorie}`)
-  } else {
-    revalidatePath('/produits')
-    redirect('/produits')
-  }
+  if (section) redirect(`/${section}/${categorie}`)
+  else redirect('/produits')
 }
