@@ -16,6 +16,8 @@ export interface Fiche {
   // Plat fields
   source?: string
   dressage?: string
+  preparations_libres?: string
+  preparation_ids?: string[]
   // Preparation fields
   ingredients?: Ingredient[]
   etapes?: string[]
@@ -24,13 +26,12 @@ export interface Fiche {
   saison?: SaisonType
   note_perso?: string
   image_url?: string
+  // Allergens
+  allergenes?: string[]
   // Produit fields
   note_libre?: string
   prix_min?: number
   prix_max?: number
-  // Plat → lien vers préparations
-  preparation_ids?: string[]
-  preparations_libres?: string
   created_at: string
   updated_at: string
 }
@@ -40,4 +41,3 @@ export interface PreparationSummary {
   nom: string
   categorie: string
 }
-
