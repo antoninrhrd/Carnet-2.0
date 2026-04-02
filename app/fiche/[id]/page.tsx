@@ -2,9 +2,9 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase'
-import { NAVIGATION, SAISON_STYLE } from '@/lib/constants'
+import { NAVIGATION, SAISON_STYLE, ALLERGENE_STYLE } from '@/lib/constants'
 import DeleteButton from './DeleteButton'
-import IngredientScaler from '@/components/IngredientScaler'
+import DuplicateButton from './DuplicateButton'
 import type { Fiche, Ingredient } from '@/lib/types'
 
 function backHref(fiche: Fiche) {
@@ -29,66 +29,58 @@ export default async function FicheDetailPage({ params }: { params: { id: string
   const { data, error } = await supabase.from('fiches').select('*').eq('id', params.id).single()
   if (error || !data) notFound()
 
-  // Fetch linked preparations for plat type
   let linkedPreparations: { id: string; nom: string; categorie: string }[] = []
   try {
     const prepIds = data.preparation_ids
     const ids = Array.isArray(prepIds) ? prepIds : (typeof prepIds === 'string' ? JSON.parse(prepIds) : [])
     if (data.type === 'plat' && ids.length > 0) {
-      const { data: preps } = await supabase
-        .from('fiches')
-        .select('id, nom, categorie')
-        .in('id', ids)
+      const { data: preps } = await supabase.from('fiches').select('id, nom, categorie').in('id', ids)
       linkedPreparations = preps || []
     }
-  } catch {
-    linkedPreparations = []
-  }
+  } catch { linkedPreparations = [] }
 
   const fiche = data as Fiche
   const { section, categorie } = sectionLabel(fiche)
   const editHref = `/fiche/${fiche.id}/edit`
   const saison = fiche.saison && SAISON_STYLE[fiche.saison]
+  const allergenes = (fiche.allergenes || []) as string[]
 
   return (
     <div className="fiche-detail">
       <Link href={backHref(fiche)} className="detail-back">← Retour</Link>
 
-      {/* Breadcrumb */}
       <div className="breadcrumb" style={{ marginBottom: 10 }}>
         {section && <span>{section}</span>}
         {categorie && <><span className="breadcrumb-sep">›</span><span>{categorie}</span></>}
       </div>
 
-      {/* Header */}
       <div className="detail-header">
         <div>
           <h1 className="detail-title">{fiche.nom}</h1>
-          {fiche.saison && saison && (
-            <span
-              className="badge"
-              style={{ background: saison.bg, color: saison.color, marginTop: 10, display: 'inline-block' }}
-            >
-              {fiche.saison}
-            </span>
-          )}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+            {fiche.saison && saison && (
+              <span className="badge" style={{ background: saison.bg, color: saison.color }}>{fiche.saison}</span>
+            )}
+            {allergenes.map(a => (
+              <span key={a} className="badge" style={{ background: ALLERGENE_STYLE[a]?.bg, color: ALLERGENE_STYLE[a]?.color }}>
+                {a === 'Gluten' ? '🌾 ' : '🥛 '}{a}
+              </span>
+            ))}
+          </div>
         </div>
-        <div className="detail-actions">
+        <div className="detail-actions" style={{ flexWrap: 'wrap', gap: 6 }}>
+          <a href={`/api/pdf?id=${fiche.id}`} target="_blank" className="btn-secondary" title="Exporter en PDF">
+            🖨 PDF
+          </a>
+          <DuplicateButton id={fiche.id} nom={fiche.nom} />
           <Link href={editHref} className="btn-secondary">✏ Modifier</Link>
           <DeleteButton id={fiche.id} type={fiche.type} categorie={fiche.categorie} nom={fiche.nom} />
         </div>
       </div>
 
-      {/* Image */}
       {fiche.image_url && (
         <div style={{ position: 'relative', width: '100%', maxHeight: 400, borderRadius: 14, overflow: 'hidden', marginBottom: 24 }}>
-          <Image
-            src={fiche.image_url}
-            alt={fiche.nom || ''}
-            width={780}
-            height={400}
-            style={{ width: '100%', height: 400, objectFit: 'cover' }}
-          />
+          <Image src={fiche.image_url} alt={fiche.nom || ''} width={780} height={400} style={{ width: '100%', height: 400, objectFit: 'cover' }} />
         </div>
       )}
 
@@ -103,44 +95,21 @@ export default async function FicheDetailPage({ params }: { params: { id: string
               </div>
             </div>
           )}
-
-          {/* Préparations libres */}
           {fiche.preparations_libres && (
             <div className="detail-section">
               <h2 className="detail-section-title">Éléments du plat</h2>
               <div className="detail-field-value" style={{ whiteSpace: 'pre-wrap' }}>{fiche.preparations_libres}</div>
             </div>
           )}
-
-          {/* Préparations liées */}
           {linkedPreparations.length > 0 && (
             <div className="detail-section">
               <h2 className="detail-section-title">Préparations associées</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {linkedPreparations.map(prep => (
-                  <Link
-                    key={prep.id}
-                    href={`/fiche/${prep.id}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      borderRadius: 8,
-                      background: 'var(--accent-light)',
-                      border: '1px solid rgba(196,98,45,0.2)',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 17, fontWeight: 500, color: 'var(--text-primary)' }}>
-                      {prep.nom}
-                    </span>
+                  <Link key={prep.id} href={`/fiche/${prep.id}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 8, background: 'var(--accent-light)', border: '1px solid rgba(196,98,45,0.2)', textDecoration: 'none' }}>
+                    <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 17, fontWeight: 500, color: 'var(--text-primary)' }}>{prep.nom}</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {prep.categorie && (
-                        <span className="badge" style={{ background: '#F0EDE8', color: 'var(--text-secondary)', fontSize: 11 }}>
-                          {CAT_LABEL[prep.categorie] || prep.categorie}
-                        </span>
-                      )}
+                      {prep.categorie && <span className="badge" style={{ background: '#F0EDE8', color: 'var(--text-secondary)', fontSize: 11 }}>{CAT_LABEL[prep.categorie] || prep.categorie}</span>}
                       <span style={{ color: 'var(--accent)', fontSize: 16 }}>→</span>
                     </span>
                   </Link>
@@ -148,7 +117,6 @@ export default async function FicheDetailPage({ params }: { params: { id: string
               </div>
             </div>
           )}
-
           {fiche.dressage && (
             <div className="detail-section">
               <h2 className="detail-section-title">Dressage</h2>
@@ -170,7 +138,14 @@ export default async function FicheDetailPage({ params }: { params: { id: string
           {fiche.ingredients && fiche.ingredients.length > 0 && (
             <div className="detail-section">
               <h2 className="detail-section-title">Ingrédients</h2>
-              <IngredientScaler ingredients={fiche.ingredients as Ingredient[]} />
+              <ul className="ingredient-list">
+                {(fiche.ingredients as Ingredient[]).map((ing, i) => (
+                  <li key={ing.id || i} className="ingredient-item">
+                    <span className="ingredient-qty">{ing.quantite} {ing.unite}</span>
+                    <span>{ing.nom}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
           {fiche.etapes && fiche.etapes.length > 0 && (
@@ -208,10 +183,8 @@ export default async function FicheDetailPage({ params }: { params: { id: string
             <div className="detail-section">
               <h2 className="detail-section-title">Prix</h2>
               <div className="prix-range">
-                💶{' '}
-                {fiche.prix_min != null ? `${fiche.prix_min}` : '?'}
-                {fiche.prix_max != null && fiche.prix_max !== fiche.prix_min ? ` – ${fiche.prix_max}` : ''}
-                {' '}€ / kg
+                💶 {fiche.prix_min != null ? `${fiche.prix_min}` : '?'}
+                {fiche.prix_max != null && fiche.prix_max !== fiche.prix_min ? ` – ${fiche.prix_max}` : ''} € / kg
               </div>
             </div>
           )}
