@@ -6,6 +6,7 @@ import { updateFiche } from '@/lib/actions'
 import { SAISONS, UNITE_OPTIONS, NAVIGATION } from '@/lib/constants'
 import type { Fiche, Ingredient } from '@/lib/types'
 import PreparationSelector from '@/components/forms/PreparationSelector'
+import AllergenSelector from '@/components/forms/AllergenSelector'
 
 function newIngredient(): Ingredient {
   return { id: Math.random().toString(36).slice(2), quantite: '', unite: '', nom: '' }
@@ -21,6 +22,7 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   const [isPending, startTransition] = useTransition()
   const [type, setType] = useState<string>(fiche.type)
   const [categorie, setCategorie] = useState(fiche.categorie)
+  const [allergenes, setAllergenes] = useState<string[]>(fiche.allergenes || [])
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     fiche.ingredients?.length ? fiche.ingredients : [newIngredient()]
   )
@@ -36,7 +38,6 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
 
   function handleTypeChange(newType: string) {
     setType(newType)
-    // Reset categorie to first valid option for new type
     const cats = getCategoriesForType(newType)
     if (cats.length > 0) setCategorie(cats[0].slug)
     else setCategorie('produits')
@@ -64,6 +65,7 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
     const fd = new FormData(formRef.current!)
     fd.set('type', type)
     fd.set('categorie', categorie)
+    fd.set('allergenes', JSON.stringify(allergenes))
     if (type === 'preparation') {
       fd.set('ingredients', JSON.stringify(ingredients.filter(i => i.nom.trim())))
       fd.set('etapes', JSON.stringify(etapes.filter(s => s.trim())))
@@ -78,56 +80,39 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
     <form ref={formRef} onSubmit={handleSubmit}>
       <input type="hidden" name="existing_image_url" value={fiche.image_url || ''} />
 
-      {/* ── TYPE ── */}
-      <div className="form-section">
-        <h2 className="form-section-title">Type de fiche</h2>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {NAVIGATION.filter(s => s.type !== 'produit').map(s => (
-            <button
-              key={s.type}
-              type="button"
-              onClick={() => handleTypeChange(s.type)}
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: 8,
+      {/* ── TYPE (plat/prépa seulement) ── */}
+      {fiche.type !== 'produit' && (
+        <div className="form-section">
+          <h2 className="form-section-title">Type de fiche</h2>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {NAVIGATION.filter(s => s.type !== 'produit').map(s => (
+              <button key={s.type} type="button" onClick={() => handleTypeChange(s.type)} style={{
+                flex: 1, padding: '10px 14px', borderRadius: 8,
                 border: `2px solid ${type === s.type ? 'var(--accent)' : 'var(--border)'}`,
                 background: type === s.type ? 'var(--accent-light)' : 'transparent',
-                cursor: 'pointer',
-                fontFamily: 'DM Sans, sans-serif',
-                fontSize: 13.5,
+                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontSize: 13.5,
                 fontWeight: type === s.type ? 500 : 400,
                 color: type === s.type ? 'var(--accent)' : 'var(--text-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                transition: 'all 0.15s',
-              }}
-            >
-              <span>{s.emoji}</span>
-              <span>{s.label}</span>
-            </button>
-          ))}
+                display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.15s',
+              }}>
+                <span>{s.emoji}</span><span>{s.label}</span>
+              </button>
+            ))}
+          </div>
+          {type !== fiche.type && (
+            <p style={{ fontSize: 12, color: 'var(--accent)', marginTop: 8 }}>
+              ⚠️ Tu changes le type de fiche — certains champs seront réinitialisés.
+            </p>
+          )}
         </div>
-        {type !== fiche.type && (
-          <p style={{ fontSize: 12, color: 'var(--accent)', marginTop: 8 }}>
-            ⚠️ Tu changes le type de fiche — certains champs seront réinitialisés.
-          </p>
-        )}
-      </div>
+      )}
 
       {/* ── CATÉGORIE ── */}
       {categories.length > 0 && (
         <div className="form-section">
           <h2 className="form-section-title">Catégorie</h2>
-          <select
-            className="field-select"
-            value={categorie}
-            onChange={e => setCategorie(e.target.value)}
-          >
-            {categories.map(c => (
-              <option key={c.slug} value={c.slug}>{c.label}</option>
-            ))}
+          <select className="field-select" value={categorie} onChange={e => setCategorie(e.target.value)}>
+            {categories.map(c => <option key={c.slug} value={c.slug}>{c.label}</option>)}
           </select>
         </div>
       )}
@@ -161,9 +146,6 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
           </div>
           <div className="form-section">
             <h2 className="form-section-title">Préparations associées</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
-              Sélectionnez les préparations qui composent ce plat.
-            </p>
             <PreparationSelector selected={preparationIds} onChange={setPreparationIds} />
           </div>
           <div className="form-section">
@@ -227,6 +209,59 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
             <input name="source_preparation" className="field-input" placeholder="Ex. Chef Troisgros…" defaultValue={fiche.source_preparation || ''} />
           </div>
         </>
+      )}
+
+      {/* ── PRODUIT ── */}
+      {type === 'produit' && (
+        <>
+          <div className="form-section">
+            <h2 className="form-section-title">Produit</h2>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="field-label">Nom *</label>
+              <input name="nom" required className="field-input" defaultValue={fiche.nom} />
+            </div>
+          </div>
+          <div className="form-section">
+            <h2 className="form-section-title">Fourchette de prix (€/kg)</h2>
+            <div className="form-row">
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="field-label">Prix min</label>
+                <input name="prix_min" type="number" min="0" step="0.01" className="field-input" defaultValue={fiche.prix_min ?? ''} />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="field-label">Prix max</label>
+                <input name="prix_max" type="number" min="0" step="0.01" className="field-input" defaultValue={fiche.prix_max ?? ''} />
+              </div>
+            </div>
+          </div>
+          <div className="form-section">
+            <h2 className="form-section-title">Note libre</h2>
+            <textarea name="note_libre" className="field-textarea" rows={6} defaultValue={fiche.note_libre || ''} />
+          </div>
+          <div className="form-section">
+            <h2 className="form-section-title">Photo</h2>
+            <div className="image-upload-zone">
+              <input type="file" name="image" accept="image/*" onChange={handleImage} />
+              {preview ? (
+                <Image src={preview} alt="Aperçu" width={600} height={220} className="image-preview" style={{ objectFit: 'cover' }} />
+              ) : (
+                <>
+                  <div className="upload-icon">📷</div>
+                  <p className="upload-text">Changer la photo</p>
+                  <p className="upload-hint">JPG, PNG, WebP — max 5 Mo</p>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── ALLERGÈNES (plat + prépa) ── */}
+      {type !== 'produit' && (
+        <div className="form-section">
+          <h2 className="form-section-title">Allergènes</h2>
+          <AllergenSelector selected={allergenes} onChange={setAllergenes} />
+        </div>
       )}
 
       {/* ── IMAGE (plat + prépa) ── */}
