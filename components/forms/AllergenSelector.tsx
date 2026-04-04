@@ -1,6 +1,6 @@
 'use client'
 
-import { ALLERGENES, ALLERGENE_STYLE } from '@/lib/constants'
+import { ALLERGENES } from '@/lib/constants'
 
 interface Props {
   selected: string[]
@@ -8,39 +8,42 @@ interface Props {
 }
 
 export default function AllergenSelector({ selected, onChange }: Props) {
-  function toggle(a: string) {
-    if (selected.includes(a)) onChange(selected.filter(s => s !== a))
-    else onChange([...selected, a])
+  function toggle(slug: string) {
+    if (selected.includes(slug)) onChange(selected.filter(s => s !== slug))
+    else onChange([...selected, slug])
   }
 
   return (
     <div>
-      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
-        Cochez les allergènes présents dans cette fiche.
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+        Cochez les allergènes <strong>présents</strong> dans cette fiche.
       </p>
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {ALLERGENES.map(a => {
-          const active = selected.includes(a)
-          const style = ALLERGENE_STYLE[a]
+          const active = selected.includes(a.slug)
           return (
             <button
-              key={a}
+              key={a.slug}
               type="button"
-              onClick={() => toggle(a)}
+              onClick={() => toggle(a.slug)}
               style={{
-                padding: '7px 16px',
+                padding: '6px 14px',
                 borderRadius: 20,
-                border: `2px solid ${active ? style.color : 'var(--border)'}`,
-                background: active ? style.bg : 'transparent',
-                color: active ? style.color : 'var(--text-secondary)',
+                border: `2px solid ${active ? a.color : 'var(--border)'}`,
+                background: active ? a.bg : 'transparent',
+                color: active ? a.color : 'var(--text-secondary)',
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: 13.5,
+                fontSize: 13,
                 fontWeight: active ? 600 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.15s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
               }}
             >
-              {a === 'Gluten' ? '🌾 ' : '🥛 '}{a}
+              <span>{a.emoji}</span>
+              <span>{a.label}</span>
             </button>
           )
         })}
@@ -48,3 +51,4 @@ export default function AllergenSelector({ selected, onChange }: Props) {
     </div>
   )
 }
+
