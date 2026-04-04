@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { createServerClient } from '@/lib/supabase'
-import { NAVIGATION, getCategoryLabel } from '@/lib/constants'
+import { NAVIGATION, getCategoryLabel, getAllergeneBySlug } from '@/lib/constants'
 import FicheGrid from '@/components/FicheGrid'
 import SeasonFilter from '@/components/SeasonFilter'
 import AllergenFilter from '@/components/AllergenFilter'
@@ -16,26 +16,26 @@ export default async function PlatsCategoriePage({
   params, searchParams,
 }: {
   params: { categorie: string }
-  searchParams: { saison?: string; allergene?: string }
+  searchParams: { saison?: string; sans?: string }
 }) {
   const { categorie } = params
-  const isValid = SECTION.categories.some(c => c.slug === categorie)
-  if (!isValid) notFound()
+  if (!SECTION.categories.some(c => c.slug === categorie)) notFound()
 
   const supabase = createServerClient()
   let query = supabase.from('fiches').select('*').eq('type', 'plat').eq('categorie', categorie).order('created_at', { ascending: false })
   if (searchParams.saison) query = query.eq('saison', searchParams.saison)
 
   const { data: fiches } = await query
-
-  // Filter by allergen client-side (contains check)
   let filtered = (fiches as Fiche[]) || []
-  if (searchParams.allergene) {
-    filtered = filtered.filter(f => (f.allergenes || []).includes(searchParams.allergene!))
+
+  // "Sans X" : exclure les fiches qui CONTIENNENT cet allergène
+  if (searchParams.sans) {
+    filtered = filtered.filter(f => !(f.allergenes || []).includes(searchParams.sans!))
   }
 
   const label = getCategoryLabel('plats', categorie)
   const newHref = `/nouvelle-fiche?type=plat&categorie=${categorie}&section=plats`
+  const allergeneLabel = searchParams.sans ? getAllergeneBySlug(searchParams.sans)?.label : null
 
   return (
     <>
@@ -46,7 +46,11 @@ export default async function PlatsCategoriePage({
             <span style={{ color: 'var(--text-primary)' }}>{label}</span>
           </div>
           <h1 className="page-title">{label}</h1>
-          <p className="page-count">{filtered.length} fiche{filtered.length !== 1 ? 's' : ''}{searchParams.saison ? ` · ${searchParams.saison}` : ''}{searchParams.allergene ? ` · ${searchParams.allergene}` : ''}</p>
+          <p className="page-count">
+            {filtered.length} fiche{filtered.length !== 1 ? 's' : ''}
+            {searchParams.saison ? ` · ${searchParams.saison}` : ''}
+            {allergeneLabel ? ` · sans ${allergeneLabel}` : ''}
+          </p>
         </div>
         <Link href={newHref} className="btn-primary">+ Nouvelle fiche</Link>
       </div>
@@ -58,3 +62,4 @@ export default async function PlatsCategoriePage({
     </>
   )
 }
+
