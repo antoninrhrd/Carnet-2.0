@@ -12,15 +12,12 @@ export async function POST(req: NextRequest) {
     const isDirectFiche = body.nom !== undefined
 
     let ficheData: Record<string, unknown>
-    let type: string
-    let categorie: string
 
     if (isDirectFiche) {
-      type = body.type
-      categorie = body.categorie
+      // Import depuis photo — on conserve TOUT ce que Claude a détecté
       ficheData = {
-        type,
-        categorie,
+        type: body.type,
+        categorie: body.categorie,
         nom: body.nom || 'Sans nom',
         image_url: null,
         source: body.source || null,
@@ -28,14 +25,14 @@ export async function POST(req: NextRequest) {
         saison: body.saison || null,
         note_perso: body.note_perso || null,
         preparations_libres: body.preparations_libres || null,
+        // Toujours sauvegarder ingrédients et étapes, même pour un plat
         ingredients: body.ingredients || [],
         etapes: body.etapes || [],
         source_preparation: body.source_preparation || null,
       }
     } else {
-      const { recipe } = body
-      type = body.type
-      categorie = body.categorie
+      // Format migration legacy
+      const { recipe, type, categorie } = body
       const nom = recipe.name || recipe.nom || 'Sans nom'
       ficheData = { type, categorie, nom, image_url: recipe.imageUrl || null }
 
@@ -53,6 +50,8 @@ export async function POST(req: NextRequest) {
         ficheData.saison = recipe.saison || null
         ficheData.source = recipe.source || null
         ficheData.preparations_libres = recipe.preparations_libres || null
+        ficheData.ingredients = recipe.ingredients || []
+        ficheData.etapes = recipe.etapes || []
       } else if (type === 'produit') {
         ficheData.note_libre = recipe.note_libre || null
         ficheData.prix_min = recipe.prix_min || null
@@ -63,25 +62,9 @@ export async function POST(req: NextRequest) {
     const { error } = await supabase.from('fiches').insert(ficheData)
     if (error) throw new Error(error.message)
 
-    // Revalidate all pages that show fiches
-    revalidatePath('/', 'page')
-    revalidatePath('/plats/entrees', 'page')
-    revalidatePath('/plats/entrees-vege', 'page')
-    revalidatePath('/plats/plats-vege', 'page')
-    revalidatePath('/plats/plats-viande', 'page')
-    revalidatePath('/plats/plats-poisson', 'page')
-    revalidatePath('/plats/desserts', 'page')
-    revalidatePath('/preparations/pates', 'page')
-    revalidatePath('/preparations/pasta', 'page')
-    revalidatePath('/preparations/sauces', 'page')
-    revalidatePath('/preparations/condiments', 'page')
-    revalidatePath('/preparations/sucre', 'page')
-    revalidatePath('/preparations/autre', 'page')
-    revalidatePath('/produits', 'page')
-
+    revalidatePath('/', 'layout')
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    return NextResponse.json({ ok: false, error: message })
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : 'Unknown error' })
   }
 }
