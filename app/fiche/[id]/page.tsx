@@ -2,9 +2,10 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase'
-import { NAVIGATION, SAISON_STYLE, ALLERGENES_STYLE } from '@/lib/constants'
+import { NAVIGATION, SAISON_STYLE, getAllergeneBySlug } from '@/lib/constants'
 import DeleteButton from './DeleteButton'
 import DuplicateButton from './DuplicateButton'
+import IngredientScaler from '@/components/IngredientScaler'
 import type { Fiche, Ingredient } from '@/lib/types'
 
 function backHref(fiche: Fiche) {
@@ -20,9 +21,7 @@ function sectionLabel(fiche: Fiche) {
 }
 
 const CAT_LABEL: Record<string, string> = {}
-NAVIGATION.find(s => s.id === 'preparations')?.categories.forEach(c => {
-  CAT_LABEL[c.slug] = c.label
-})
+NAVIGATION.find(s => s.id === 'preparations')?.categories.forEach(c => { CAT_LABEL[c.slug] = c.label })
 
 export default async function FicheDetailPage({ params }: { params: { id: string } }) {
   const supabase = createServerClient()
@@ -41,7 +40,6 @@ export default async function FicheDetailPage({ params }: { params: { id: string
 
   const fiche = data as Fiche
   const { section, categorie } = sectionLabel(fiche)
-  const editHref = `/fiche/${fiche.id}/edit`
   const saison = fiche.saison && SAISON_STYLE[fiche.saison]
   const allergenes = (fiche.allergenes || []) as string[]
 
@@ -61,19 +59,21 @@ export default async function FicheDetailPage({ params }: { params: { id: string
             {fiche.saison && saison && (
               <span className="badge" style={{ background: saison.bg, color: saison.color }}>{fiche.saison}</span>
             )}
-            {allergenes.map(a => (
-              <span key={a} className="badge" style={{ background: ALLERGENE_STYLE[a]?.bg, color: ALLERGENE_STYLE[a]?.color }}>
-                {a === 'Gluten' ? '🌾 ' : '🥛 '}{a}
-              </span>
-            ))}
+            {allergenes.map(slug => {
+              const a = getAllergeneBySlug(slug)
+              if (!a) return null
+              return (
+                <span key={slug} className="badge" style={{ background: a.bg, color: a.color }}>
+                  {a.emoji} {a.label}
+                </span>
+              )
+            })}
           </div>
         </div>
         <div className="detail-actions" style={{ flexWrap: 'wrap', gap: 6 }}>
-          <a href={`/api/pdf?id=${fiche.id}`} target="_blank" className="btn-secondary" title="Exporter en PDF">
-            🖨 PDF
-          </a>
+          <a href={`/api/pdf?id=${fiche.id}`} target="_blank" className="btn-secondary">🖨 PDF</a>
           <DuplicateButton id={fiche.id} nom={fiche.nom} />
-          <Link href={editHref} className="btn-secondary">✏ Modifier</Link>
+          <Link href={`/fiche/${fiche.id}/edit`} className="btn-secondary">✏ Modifier</Link>
           <DeleteButton id={fiche.id} type={fiche.type} categorie={fiche.categorie} nom={fiche.nom} />
         </div>
       </div>
@@ -138,14 +138,7 @@ export default async function FicheDetailPage({ params }: { params: { id: string
           {fiche.ingredients && fiche.ingredients.length > 0 && (
             <div className="detail-section">
               <h2 className="detail-section-title">Ingrédients</h2>
-              <ul className="ingredient-list">
-                {(fiche.ingredients as Ingredient[]).map((ing, i) => (
-                  <li key={ing.id || i} className="ingredient-item">
-                    <span className="ingredient-qty">{ing.quantite} {ing.unite}</span>
-                    <span>{ing.nom}</span>
-                  </li>
-                ))}
-              </ul>
+              <IngredientScaler ingredients={fiche.ingredients as Ingredient[]} />
             </div>
           )}
           {fiche.etapes && fiche.etapes.length > 0 && (
