@@ -13,8 +13,7 @@ function newIngredient(): Ingredient {
 }
 
 function getCategoriesForType(type: string) {
-  const section = NAVIGATION.find(s => s.type === type)
-  return section?.categories || []
+  return NAVIGATION.find(s => s.type === type)?.categories || []
 }
 
 export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
@@ -33,14 +32,18 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
     Array.isArray(fiche.preparation_ids) ? fiche.preparation_ids : []
   )
   const formRef = useRef<HTMLFormElement>(null)
-
   const categories = getCategoriesForType(type)
+
+  // Fiche plat avec pesées/étapes (importée depuis photo/livre)
+  const platHasRecipe = fiche.type === 'plat' && (
+    (fiche.ingredients && fiche.ingredients.length > 0) ||
+    (fiche.etapes && fiche.etapes.length > 0)
+  )
 
   function handleTypeChange(newType: string) {
     setType(newType)
     const cats = getCategoriesForType(newType)
-    if (cats.length > 0) setCategorie(cats[0].slug)
-    else setCategorie('produits')
+    setCategorie(cats.length > 0 ? cats[0].slug : 'produits')
   }
 
   function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
@@ -53,7 +56,6 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
   }
   function addIng() { setIngredients(prev => [...prev, newIngredient()]) }
   function removeIng(id: string) { setIngredients(prev => prev.filter(i => i.id !== id)) }
-
   function updateEtape(idx: number, value: string) {
     setEtapes(prev => { const arr = [...prev]; arr[idx] = value; return arr })
   }
@@ -66,10 +68,9 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
     fd.set('type', type)
     fd.set('categorie', categorie)
     fd.set('allergenes', JSON.stringify(allergenes))
-    if (type === 'preparation') {
-      fd.set('ingredients', JSON.stringify(ingredients.filter(i => i.nom.trim())))
-      fd.set('etapes', JSON.stringify(etapes.filter(s => s.trim())))
-    }
+    // Toujours envoyer ingrédients et étapes (plat ou prépa)
+    fd.set('ingredients', JSON.stringify(ingredients.filter(i => i.nom.trim())))
+    fd.set('etapes', JSON.stringify(etapes.filter(s => s.trim())))
     if (type === 'plat') {
       fd.set('preparation_ids', JSON.stringify(preparationIds))
     }
@@ -101,7 +102,7 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
           </div>
           {type !== fiche.type && (
             <p style={{ fontSize: 12, color: 'var(--accent)', marginTop: 8 }}>
-              ⚠️ Tu changes le type de fiche — certains champs seront réinitialisés.
+              ⚠️ Tu changes le type de fiche.
             </p>
           )}
         </div>
@@ -140,14 +141,57 @@ export default function EditFormWrapper({ fiche }: { fiche: Fiche }) {
               </div>
             </div>
           </div>
+
           <div className="form-section">
             <h2 className="form-section-title">Éléments du plat</h2>
             <textarea name="preparations_libres" className="field-textarea" rows={3} defaultValue={fiche.preparations_libres || ''} />
           </div>
+
+          {/* Ingrédients — toujours affichés pour les plats avec pesées, optionnel sinon */}
+          {(platHasRecipe || type !== fiche.type) && (
+            <div className="form-section">
+              <h2 className="form-section-title">Ingrédients</h2>
+              <div className="ingredient-row" style={{ marginBottom: 6 }}>
+                <span className="field-label">Quantité</span>
+                <span className="field-label">Unité</span>
+                <span className="field-label">Ingrédient</span>
+                <span />
+              </div>
+              {ingredients.map(ing => (
+                <div key={ing.id} className="ingredient-row">
+                  <input className="field-input" value={ing.quantite} onChange={e => updateIng(ing.id, 'quantite', e.target.value)} placeholder="200" />
+                  <select className="field-select" value={ing.unite} onChange={e => updateIng(ing.id, 'unite', e.target.value)} style={{ fontSize: 13 }}>
+                    <option value="">—</option>
+                    {UNITE_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                  <input className="field-input" value={ing.nom} onChange={e => updateIng(ing.id, 'nom', e.target.value)} placeholder="Ingrédient" />
+                  <button type="button" className="btn-icon" onClick={() => removeIng(ing.id)}>×</button>
+                </div>
+              ))}
+              <button type="button" className="btn-add-row" onClick={addIng}>+ Ajouter un ingrédient</button>
+            </div>
+          )}
+
+          {/* Étapes — toujours affichées pour les plats avec étapes */}
+          {(platHasRecipe || type !== fiche.type) && (
+            <div className="form-section">
+              <h2 className="form-section-title">Étapes</h2>
+              {etapes.map((etape, idx) => (
+                <div key={idx} className="etape-row">
+                  <div className="etape-num">{idx + 1}</div>
+                  <textarea className="field-textarea" rows={2} value={etape} onChange={e => updateEtape(idx, e.target.value)} style={{ minHeight: 60 }} />
+                  <button type="button" className="btn-icon" onClick={() => removeEtape(idx)}>×</button>
+                </div>
+              ))}
+              <button type="button" className="btn-add-row" onClick={addEtape}>+ Ajouter une étape</button>
+            </div>
+          )}
+
           <div className="form-section">
             <h2 className="form-section-title">Préparations associées</h2>
             <PreparationSelector selected={preparationIds} onChange={setPreparationIds} />
           </div>
+
           <div className="form-section">
             <h2 className="form-section-title">Dressage &amp; présentation</h2>
             <textarea name="dressage" className="field-textarea" rows={4} defaultValue={fiche.dressage || ''} />
