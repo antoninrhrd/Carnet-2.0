@@ -9,53 +9,44 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const supabase = createServerClient()
 
+    // Import depuis photo : body contient directement les champs de la fiche
     const isDirectFiche = body.nom !== undefined
 
     let ficheData: Record<string, unknown>
 
     if (isDirectFiche) {
-      // Import depuis photo — on conserve TOUT ce que Claude a détecté
+      // On sauvegarde TOUT ce que Claude a détecté, sans rien filtrer selon le type
       ficheData = {
-        type: body.type,
-        categorie: body.categorie,
-        nom: body.nom || 'Sans nom',
-        image_url: null,
-        source: body.source || null,
-        dressage: body.dressage || null,
-        saison: body.saison || null,
-        note_perso: body.note_perso || null,
-        preparations_libres: body.preparations_libres || null,
-        // Toujours sauvegarder ingrédients et étapes, même pour un plat
-        ingredients: body.ingredients || [],
-        etapes: body.etapes || [],
-        source_preparation: body.source_preparation || null,
+        type:                 body.type,
+        categorie:            body.categorie,
+        nom:                  body.nom || 'Sans nom',
+        image_url:            null,
+        source:               body.source || null,
+        dressage:             body.dressage || null,
+        saison:               body.saison || null,
+        note_perso:           body.note_perso || null,
+        preparations_libres:  body.preparations_libres || null,
+        ingredients:          Array.isArray(body.ingredients) ? body.ingredients : [],
+        etapes:               Array.isArray(body.etapes) ? body.etapes : [],
+        source_preparation:   body.source_preparation || null,
+        allergenes:           Array.isArray(body.allergenes) ? body.allergenes : [],
       }
     } else {
-      // Format migration legacy
+      // Format migration legacy (recipe wrapper)
       const { recipe, type, categorie } = body
       const nom = recipe.name || recipe.nom || 'Sans nom'
-      ficheData = { type, categorie, nom, image_url: recipe.imageUrl || null }
-
-      if (type === 'preparation') {
-        ficheData.ingredients = (recipe.ingredients || []).map((ing: Record<string, unknown>, i: number) => ({
-          id: `m_${i}`, quantite: ing.quantite || '', unite: ing.unite || '', nom: ing.nom || '',
-        }))
-        ficheData.etapes = recipe.steps || recipe.etapes || []
-        ficheData.saison = recipe.saison || null
-        ficheData.note_perso = recipe.note_perso || null
-        ficheData.source_preparation = recipe.source || null
-      } else if (type === 'plat') {
-        ficheData.dressage = recipe.dressage || (recipe.steps?.join('\n\n')) || null
-        ficheData.note_perso = recipe.note_perso || null
-        ficheData.saison = recipe.saison || null
-        ficheData.source = recipe.source || null
-        ficheData.preparations_libres = recipe.preparations_libres || null
-        ficheData.ingredients = recipe.ingredients || []
-        ficheData.etapes = recipe.etapes || []
-      } else if (type === 'produit') {
-        ficheData.note_libre = recipe.note_libre || null
-        ficheData.prix_min = recipe.prix_min || null
-        ficheData.prix_max = recipe.prix_max || null
+      ficheData = {
+        type, categorie, nom,
+        image_url:   recipe.imageUrl || null,
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map((ing: Record<string, unknown>, i: number) => ({ id: `m_${i}`, quantite: ing.quantite || '', unite: ing.unite || '', nom: ing.nom || '' })) : [],
+        etapes:      recipe.steps || recipe.etapes || [],
+        saison:      recipe.saison || null,
+        note_perso:  recipe.note_perso || null,
+        source:      recipe.source || null,
+        dressage:    recipe.dressage || null,
+        preparations_libres: recipe.preparations_libres || null,
+        source_preparation:  recipe.source_preparation || null,
+        allergenes:  Array.isArray(recipe.allergenes) ? recipe.allergenes : [],
       }
     }
 
