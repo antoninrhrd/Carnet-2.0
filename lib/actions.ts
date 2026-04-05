@@ -16,18 +16,14 @@ async function uploadImage(supabase: ReturnType<typeof createServerClient>, file
   return publicUrl
 }
 
-function revalidateAll() {
-  revalidatePath('/', 'layout')
-}
+function revalidateAll() { revalidatePath('/', 'layout') }
 
 export async function createFiche(formData: FormData) {
   const supabase = createServerClient()
   const type = formData.get('type') as string
   const categorie = formData.get('categorie') as string
   const nom = formData.get('nom') as string
-  const allergenesRaw = formData.get('allergenes') as string
-  const allergenes = allergenesRaw ? JSON.parse(allergenesRaw) : []
-
+  const allergenes = JSON.parse((formData.get('allergenes') as string) || '[]')
   const imageFile = formData.get('image') as File
   const imageUrl = await uploadImage(supabase, imageFile, type)
 
@@ -35,12 +31,31 @@ export async function createFiche(formData: FormData) {
 
   if (type === 'plat') {
     const prepIds = formData.get('preparation_ids')
-    ficheData = { ...ficheData, source: formData.get('source') || null, dressage: formData.get('dressage') || null, saison: formData.get('saison') || null, note_perso: formData.get('note_perso') || null, preparation_ids: prepIds ? JSON.parse(prepIds as string) : [], preparations_libres: formData.get('preparations_libres') || null }
+    ficheData = { ...ficheData,
+      source: formData.get('source') || null,
+      dressage: formData.get('dressage') || null,
+      saison: formData.get('saison') || null,
+      note_perso: formData.get('note_perso') || null,
+      preparation_ids: prepIds ? JSON.parse(prepIds as string) : [],
+      preparations_libres: formData.get('preparations_libres') || null,
+      ingredients: JSON.parse((formData.get('ingredients') as string) || '[]'),
+      etapes: JSON.parse((formData.get('etapes') as string) || '[]'),
+    }
   } else if (type === 'preparation') {
-    ficheData = { ...ficheData, ingredients: JSON.parse((formData.get('ingredients') as string) || '[]'), etapes: JSON.parse((formData.get('etapes') as string) || '[]'), saison: formData.get('saison') || null, note_perso: formData.get('note_perso') || null, source_preparation: formData.get('source_preparation') || null }
+    ficheData = { ...ficheData,
+      ingredients: JSON.parse((formData.get('ingredients') as string) || '[]'),
+      etapes: JSON.parse((formData.get('etapes') as string) || '[]'),
+      saison: formData.get('saison') || null,
+      note_perso: formData.get('note_perso') || null,
+      source_preparation: formData.get('source_preparation') || null,
+    }
   } else if (type === 'produit') {
     const pMin = formData.get('prix_min'); const pMax = formData.get('prix_max')
-    ficheData = { ...ficheData, note_libre: formData.get('note_libre') || null, prix_min: pMin ? parseFloat(pMin as string) : null, prix_max: pMax ? parseFloat(pMax as string) : null }
+    ficheData = { ...ficheData,
+      note_libre: formData.get('note_libre') || null,
+      prix_min: pMin ? parseFloat(pMin as string) : null,
+      prix_max: pMax ? parseFloat(pMax as string) : null,
+    }
   }
 
   const { data, error } = await supabase.from('fiches').insert(ficheData).select().single()
@@ -54,9 +69,7 @@ export async function updateFiche(id: string, formData: FormData) {
   const type = formData.get('type') as string
   const categorie = formData.get('categorie') as string
   const nom = formData.get('nom') as string
-  const allergenesRaw = formData.get('allergenes') as string
-  const allergenes = allergenesRaw ? JSON.parse(allergenesRaw) : []
-
+  const allergenes = JSON.parse((formData.get('allergenes') as string) || '[]')
   const imageFile = formData.get('image') as File
   const existingImage = formData.get('existing_image_url') as string | null
   const newImageUrl = await uploadImage(supabase, imageFile, type)
@@ -66,12 +79,33 @@ export async function updateFiche(id: string, formData: FormData) {
 
   if (type === 'plat') {
     const prepIds = formData.get('preparation_ids')
-    ficheData = { ...ficheData, source: formData.get('source') || null, dressage: formData.get('dressage') || null, saison: formData.get('saison') || null, note_perso: formData.get('note_perso') || null, preparation_ids: prepIds ? JSON.parse(prepIds as string) : [], preparations_libres: formData.get('preparations_libres') || null, ingredients: [], etapes: [], source_preparation: null }
+    ficheData = { ...ficheData,
+      source: formData.get('source') || null,
+      dressage: formData.get('dressage') || null,
+      saison: formData.get('saison') || null,
+      note_perso: formData.get('note_perso') || null,
+      preparation_ids: prepIds ? JSON.parse(prepIds as string) : [],
+      preparations_libres: formData.get('preparations_libres') || null,
+      // Conserver ingrédients/étapes s'ils existent dans le formulaire
+      ingredients: JSON.parse((formData.get('ingredients') as string) || '[]'),
+      etapes: JSON.parse((formData.get('etapes') as string) || '[]'),
+    }
   } else if (type === 'preparation') {
-    ficheData = { ...ficheData, ingredients: JSON.parse((formData.get('ingredients') as string) || '[]'), etapes: JSON.parse((formData.get('etapes') as string) || '[]'), saison: formData.get('saison') || null, note_perso: formData.get('note_perso') || null, source_preparation: formData.get('source_preparation') || null, source: null, dressage: null, preparation_ids: [], preparations_libres: null }
+    ficheData = { ...ficheData,
+      ingredients: JSON.parse((formData.get('ingredients') as string) || '[]'),
+      etapes: JSON.parse((formData.get('etapes') as string) || '[]'),
+      saison: formData.get('saison') || null,
+      note_perso: formData.get('note_perso') || null,
+      source_preparation: formData.get('source_preparation') || null,
+      source: null, dressage: null, preparation_ids: [], preparations_libres: null,
+    }
   } else if (type === 'produit') {
     const pMin = formData.get('prix_min'); const pMax = formData.get('prix_max')
-    ficheData = { ...ficheData, note_libre: formData.get('note_libre') || null, prix_min: pMin ? parseFloat(pMin as string) : null, prix_max: pMax ? parseFloat(pMax as string) : null }
+    ficheData = { ...ficheData,
+      note_libre: formData.get('note_libre') || null,
+      prix_min: pMin ? parseFloat(pMin as string) : null,
+      prix_max: pMax ? parseFloat(pMax as string) : null,
+    }
   }
 
   const { error } = await supabase.from('fiches').update(ficheData).eq('id', id)
