@@ -5,11 +5,15 @@ export const maxDuration = 60
 const VALID_TYPES = ['plat', 'preparation']
 const VALID_PLAT_CATS = ['entrees', 'entrees-vege', 'plats-vege', 'plats-viande', 'plats-poisson', 'plats-crustace', 'plats-mollusque', 'desserts']
 const VALID_PREP_CATS = ['pates', 'pasta', 'sauces', 'condiments', 'sucre', 'autre']
+const VALID_ALLERGENES = ['gluten', 'lactose', 'oeufs', 'poisson', 'crustaces', 'mollusques', 'arachides', 'fruits-a-coque', 'soja', 'celeri', 'moutarde', 'sesame', 'sulfites', 'lupin', 'vegan']
 
 function sanitizeFiche(f: Record<string, unknown>) {
   const type = VALID_TYPES.includes(f.type as string) ? f.type as string : 'preparation'
   const validCats = type === 'plat' ? VALID_PLAT_CATS : VALID_PREP_CATS
   const categorie = validCats.includes(f.categorie as string) ? f.categorie as string : (type === 'plat' ? 'entrees' : 'autre')
+  const rawAllergenes = Array.isArray(f.allergenes) ? f.allergenes : []
+  const allergenes = rawAllergenes.filter((a: unknown) => VALID_ALLERGENES.includes(a as string))
+
   return {
     type,
     categorie,
@@ -18,11 +22,11 @@ function sanitizeFiche(f: Record<string, unknown>) {
     dressage: f.dressage || null,
     saison: f.saison || null,
     note_perso: f.note_perso || null,
-    // Toujours conserver ingrédients et étapes, quel que soit le type
     ingredients: Array.isArray(f.ingredients) ? f.ingredients : [],
     etapes: Array.isArray(f.etapes) ? f.etapes : [],
     preparations_libres: f.preparations_libres || null,
     source_preparation: f.source_preparation || f.source || null,
+    allergenes,
   }
 }
 
@@ -42,24 +46,25 @@ Retourne UNIQUEMENT un JSON valide avec cette structure exacte, sans aucun texte
   "fiches": [
     {
       "type": "plat" ou "preparation",
-      "categorie": pour plat: "entrees" ou "entrees-vege" ou "plats-vege" ou "plats-viande" ou "plats-poisson" ou "plats-crustace" ou "plats-mollusque" ou "desserts", pour preparation: "pates" ou "pasta" ou "sauces" ou "condiments" ou "sucre" ou "autre",
+      "categorie": pour plat: "entrees"/"entrees-vege"/"plats-vege"/"plats-viande"/"plats-poisson"/"plats-crustace"/"plats-mollusque"/"desserts", pour preparation: "pates"/"pasta"/"sauces"/"condiments"/"sucre"/"autre",
       "nom": "Nom exact visible sur la photo",
       "source": "Chef ou livre source ou null",
-      "dressage": "Instructions de dressage ou présentation ou null",
+      "dressage": "Instructions de dressage ou null",
       "saison": null,
       "note_perso": "Remarques ou null",
       "ingredients": [{"id": "1", "quantite": "200", "unite": "g", "nom": "Beurre"}],
       "etapes": ["Étape 1 complète", "Étape 2 complète"],
-      "preparations_libres": "Liste des éléments/composants si c'est un plat assemblé, ou null"
+      "preparations_libres": "Liste des composants du plat ou null",
+      "allergenes": ["gluten", "lactose"]
     }
   ]
 }
 
-RÈGLES STRICTES :
+RÈGLES :
 - "type" doit être exactement "plat" ou "preparation"
 - "nom" doit être le nom visible sur la photo
-- "categorie" doit être une des valeurs listées
-- IMPORTANT : pour les plats de livre ou fiches techniques avec des pesées et des étapes, retranscris TOUT : tous les ingrédients avec quantités exactes ET toutes les étapes de préparation — même s'il s'agit d'un "plat" et non d'une préparation
+- Retranscris TOUJOURS tous les ingrédients avec quantités ET toutes les étapes, même pour un plat
+- Pour "allergenes" : détecte les allergènes présents dans les ingrédients et retourne uniquement les slugs applicables parmi cette liste exacte : "gluten", "lactose", "oeufs", "poisson", "crustaces", "mollusques", "arachides", "fruits-a-coque", "soja", "celeri", "moutarde", "sesame", "sulfites", "lupin", "vegan". Si aucun allergène détecté ou incertain, retourne []
 - Si plusieurs préparations distinctes sont visibles, crée plusieurs objets dans "fiches"
 - Réponds UNIQUEMENT avec le JSON, rien d'autre`
 
