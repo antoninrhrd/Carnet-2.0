@@ -10,8 +10,7 @@ import type { Fiche, Ingredient } from '@/lib/types'
 
 function backHref(fiche: Fiche) {
   if (fiche.type === 'produit') return '/produits'
-  const section = fiche.type === 'plat' ? 'plats' : 'preparations'
-  return `/${section}/${fiche.categorie}`
+  return `/${fiche.type === 'plat' ? 'plats' : 'preparations'}/${fiche.categorie}`
 }
 
 function sectionLabel(fiche: Fiche) {
@@ -30,8 +29,8 @@ export default async function FicheDetailPage({ params }: { params: { id: string
 
   let linkedPreparations: { id: string; nom: string; categorie: string }[] = []
   try {
-    const prepIds = data.preparation_ids
-    const ids = Array.isArray(prepIds) ? prepIds : (typeof prepIds === 'string' ? JSON.parse(prepIds) : [])
+    const ids = Array.isArray(data.preparation_ids) ? data.preparation_ids :
+      (typeof data.preparation_ids === 'string' ? JSON.parse(data.preparation_ids) : [])
     if (data.type === 'plat' && ids.length > 0) {
       const { data: preps } = await supabase.from('fiches').select('id, nom, categorie').in('id', ids)
       linkedPreparations = preps || []
@@ -42,6 +41,8 @@ export default async function FicheDetailPage({ params }: { params: { id: string
   const { section, categorie } = sectionLabel(fiche)
   const saison = fiche.saison && SAISON_STYLE[fiche.saison]
   const allergenes = (fiche.allergenes || []) as string[]
+  const hasIngredients = fiche.ingredients && (fiche.ingredients as Ingredient[]).length > 0
+  const hasEtapes = fiche.etapes && (fiche.etapes as string[]).length > 0
 
   return (
     <div className="fiche-detail">
@@ -89,18 +90,26 @@ export default async function FicheDetailPage({ params }: { params: { id: string
         <>
           {fiche.source && (
             <div className="detail-section">
-              <div className="detail-field">
-                <div className="detail-field-label">Source / Inspiration</div>
-                <div className="detail-field-value">{fiche.source}</div>
-              </div>
+              <div className="detail-field-label">Source / Inspiration</div>
+              <div className="detail-field-value">{fiche.source}</div>
             </div>
           )}
+
           {fiche.preparations_libres && (
             <div className="detail-section">
               <h2 className="detail-section-title">Éléments du plat</h2>
               <div className="detail-field-value" style={{ whiteSpace: 'pre-wrap' }}>{fiche.preparations_libres}</div>
             </div>
           )}
+
+          {/* Ingrédients — visibles si présents (fiches importées depuis photo/livre) */}
+          {hasIngredients && (
+            <div className="detail-section">
+              <h2 className="detail-section-title">Ingrédients</h2>
+              <IngredientScaler ingredients={fiche.ingredients as Ingredient[]} />
+            </div>
+          )}
+
           {linkedPreparations.length > 0 && (
             <div className="detail-section">
               <h2 className="detail-section-title">Préparations associées</h2>
@@ -117,12 +126,29 @@ export default async function FicheDetailPage({ params }: { params: { id: string
               </div>
             </div>
           )}
+
+          {/* Étapes — visibles si présentes */}
+          {hasEtapes && (
+            <div className="detail-section">
+              <h2 className="detail-section-title">Étapes</h2>
+              <ol className="etape-list">
+                {(fiche.etapes as string[]).map((etape, i) => (
+                  <li key={i} className="etape-item">
+                    <span className="etape-bullet">{i + 1}</span>
+                    <span className="etape-text">{etape}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
           {fiche.dressage && (
             <div className="detail-section">
               <h2 className="detail-section-title">Dressage</h2>
               <div className="detail-field-value" style={{ whiteSpace: 'pre-wrap' }}>{fiche.dressage}</div>
             </div>
           )}
+
           {fiche.note_perso && (
             <div className="detail-section">
               <h2 className="detail-section-title">Note personnelle</h2>
@@ -135,13 +161,13 @@ export default async function FicheDetailPage({ params }: { params: { id: string
       {/* ── PREPARATION ── */}
       {fiche.type === 'preparation' && (
         <>
-          {fiche.ingredients && fiche.ingredients.length > 0 && (
+          {hasIngredients && (
             <div className="detail-section">
               <h2 className="detail-section-title">Ingrédients</h2>
               <IngredientScaler ingredients={fiche.ingredients as Ingredient[]} />
             </div>
           )}
-          {fiche.etapes && fiche.etapes.length > 0 && (
+          {hasEtapes && (
             <div className="detail-section">
               <h2 className="detail-section-title">Préparation</h2>
               <ol className="etape-list">
